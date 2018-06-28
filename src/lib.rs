@@ -28,7 +28,7 @@ pub mod clap {
 }
 
 /// Information needed to set up an argument.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct ArgInfo<'a> {
     /// The name of the argument, which is also its long flag.
     pub name: &'a str,
@@ -36,6 +36,8 @@ pub struct ArgInfo<'a> {
     pub required: bool,
     /// Can we repeat the flag?
     pub multiple: bool,
+    /// Help string (if any)
+    pub help: &'a str,
 }
 
 impl<'a> ArgInfo<'a> {
@@ -45,6 +47,7 @@ impl<'a> ArgInfo<'a> {
             name: name,
             required: true,
             multiple: false,
+            help: "",
         }
     }
 }
@@ -91,7 +94,8 @@ pub trait ClapMe : Sized {
 
 impl ClapMe for bool {
     fn augment_clap<'a, 'b>(info: ArgInfo<'a>, app: clap::App<'a,'b>) -> clap::App<'a,'b> {
-        app.arg(clap::Arg::with_name(info.name).long(info.name))
+        app.arg(clap::Arg::with_name(info.name).long(info.name)
+                .help(&info.help))
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(matches.is_present(name))
@@ -106,6 +110,7 @@ macro_rules! impl_fromstr {
                         .long(info.name)
                         .takes_value(true)
                         .required(info.required)
+                        .help(&info.help)
                         .validator(|s| Self::from_str(&s).map(|_| ()).map_err(|e| e.to_string())))
             }
             fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
@@ -144,6 +149,7 @@ impl<T> ClapMe for Vec<T> where T: FromStr, <T as FromStr>::Err: std::fmt::Debug
                 .takes_value(true)
                 .required(false)
                 .multiple(true)
+                .help(&info.help)
                 .validator(|s| T::from_str(&s).map(|_| ()).map_err(|_| "oops".to_owned())))
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {

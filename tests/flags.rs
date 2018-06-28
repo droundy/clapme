@@ -15,11 +15,15 @@ use clapme::ClapMe;
 fn unique_flag() {
     #[derive(ClapMe, PartialEq, Debug)]
     struct Opt {
+        /// Documentation for alice
         alice: bool,
     }
 
     assert!(
         Opt::test_help().contains("--alice")
+    );
+    assert!(
+        Opt::test_help().contains("Documentation for alice")
     );
 
     assert_eq!(

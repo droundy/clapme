@@ -7,6 +7,7 @@ use clapme::ClapMe;
 struct HelloWorld {
     /// Should we or should we not greet?
     hello: bool,
+    /// Our oyster!
     world: u16,
 }
 

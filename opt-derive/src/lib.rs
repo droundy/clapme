@@ -20,6 +20,50 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::*;
 
+fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
+    let mut doc_comments: Vec<_> = attrs
+        .iter()
+        .filter_map(|attr| {
+            let path = &attr.path;
+            if quote!(#path).to_string() == "doc" {
+                attr.interpret_meta()
+            } else {
+                None
+            }
+        })
+        .filter_map(|attr| {
+            use Lit::*;
+            use Meta::*;
+            if let NameValue(MetaNameValue {ident, lit: Str(s), ..}) = attr {
+                if ident != "doc" {
+                    return None;
+                }
+                let value = s.value();
+                let text = value
+                    .trim_left_matches("//!")
+                    .trim_left_matches("///")
+                    .trim_left_matches("/*!")
+                    .trim_left_matches("/**")
+                    .trim_right_matches("*/")
+                    .trim();
+                if text.is_empty() {
+                    Some("\n\n".to_string())
+                } else {
+                    Some(text.to_string())
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+    if doc_comments.len() > 0 {
+        doc_comments.pop().unwrap_or("".to_string())
+    } else {
+        "".to_string()
+    }
+}
+
+
 /// Generates the `ClapMe` impl.
 #[proc_macro_derive(ClapMe)]
 pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -43,12 +87,15 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let types2 = f2.iter().map(|x| x.ty.clone());
             let idents3 = fields.named.clone().into_iter()
                 .map(|x| x.ident.clone().unwrap().to_string());
+            let docs: Vec<_> = fields.named.clone().into_iter()
+                .map(|x| get_doc_comment(&x.attrs)).collect();
+            println!("docs are {:?}", docs);
             quote!{
                 fn augment_clap<'a, 'b>(mut info: clapme::ArgInfo<'a>,
                                         app: clapme::clap::App<'a,'b>)
                                         -> clapme::clap::App<'a,'b> {
                     info.multiple = false;
-                    #( info.name = #idents; let app = #types::augment_clap(info, app); )*
+                    #( info.name = #idents; info.help = #docs; let app = #types::augment_clap(info.clone(), app); )*
                     app
                 }
                 fn from_clap<'a,'b>(_name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
@@ -70,3 +117,4 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     println!("myimpl is {}", myimpl);
     tokens2.into()
 }
+
