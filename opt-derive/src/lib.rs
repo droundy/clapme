@@ -38,6 +38,11 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
             let idents = f.iter().map(|x| x.ident.clone().unwrap().to_string());
             let types = f.iter().map(|x| x.ty.clone());
+            let f2: Vec<_> = fields.named.clone().into_iter().collect();
+            let idents2 = f2.iter().map(|x| x.ident.clone().unwrap());
+            let types2 = f2.iter().map(|x| x.ty.clone());
+            let idents3 = fields.named.clone().into_iter()
+                .map(|x| x.ident.clone().unwrap().to_string());
             quote!{
                 fn augment_clap<'a, 'b>(mut info: clapme::ArgInfo<'a>,
                                         app: clapme::clap::App<'a,'b>)
@@ -45,6 +50,11 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     info.multiple = false;
                     #( info.name = #idents; let app = #types::augment_clap(info, app); )*
                     app
+                }
+                fn from_clap<'a,'b>(_name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
+                    Some( #name {
+                        #( #idents2: #types2::from_clap(#idents3, app)?,  )*
+                    })
                 }
             }
         },

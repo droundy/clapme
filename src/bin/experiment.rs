@@ -11,6 +11,7 @@ struct HelloWorld {
 }
 
 fn main() {
-    println!("hello world!");
-    println!("help: {}", HelloWorld::test_help());
+    let opts = HelloWorld::parse_args();
+    println!("hello is {}", opts.hello);
+    println!("world is {}", opts.world);
 }

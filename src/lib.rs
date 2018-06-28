@@ -20,6 +20,7 @@ extern crate opt_derive;
 pub use opt_derive::*;
 
 use std::str::FromStr;
+use std::ffi::OsString;
 
 /// Re-export of clap
 pub mod clap {
@@ -66,6 +67,25 @@ pub trait ClapMe : Sized {
         let mut help_data = Vec::new();
         Self::augment_clap(info, clap::App::new("foo")).write_help(&mut help_data).unwrap();
         String::from_utf8_lossy(&help_data).into_owned()
+    }
+
+    /// Parse command line arguments.
+    fn parse_args() -> Self {
+        let matches = Self::augment_clap(ArgInfo::new(""),
+                                         clap::App::new("foo")).get_matches();
+        Self::from_clap("", &matches).unwrap()
+    }
+
+    /// Parse command line arguments.
+    fn parse_from<I,T>(args: I) -> Result<Self, clap::Error>
+        where
+        I: IntoIterator<Item = T>,
+        T: Into<OsString> + Clone,
+    {
+        let matches =
+            Self::augment_clap(ArgInfo::new(""),
+                               clap::App::new("foo")).get_matches_from_safe(args)?;
+        Ok(Self::from_clap("", &matches).unwrap())
     }
 }
 

@@ -21,4 +21,14 @@ fn unique_flag() {
     assert!(
         Opt::test_help().contains("--alice")
     );
+
+    assert_eq!(
+        Opt { alice: true },
+        Opt::parse_from(&["", "--alice"]).unwrap());
+
+    assert_eq!(
+        Opt { alice: false },
+        Opt::parse_from(&[""]).unwrap());
+
+    assert!(Opt::parse_from(&["", "--bob"]).is_err());
 }

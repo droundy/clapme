@@ -20,4 +20,10 @@ fn required_option() {
     assert!(
         Opt::test_help().contains("--arg")
     );
+
+    assert_eq!(
+        Opt { arg: 7 },
+        Opt::parse_from(&["", "--arg", "7"]).unwrap());
+
+    assert!(Opt::parse_from(&["", "--arg"]).is_err());
 }
