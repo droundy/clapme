@@ -53,11 +53,12 @@ impl<'a> ArgInfo<'a> {
 }
 
 /// Any type of trait `ClapMe` can be used as an argument value.
-pub trait ClapMe : Sized {
+pub trait ClapMe : Sized + 'static {
     /// Updates and returns the corresponding `clap::App`.
-    fn augment_clap<'a, 'b>(_info: ArgInfo<'a>,
-                            app: clap::App<'a,'b>) -> clap::App<'a,'b> {
-        app
+    fn with_clap<T: 'static>(_info: ArgInfo,
+                    app: clap::App,
+                    f: impl FnOnce(clap::App) -> T) -> T {
+        f(app)
     }
     /// Parses the clap info to obtain a value.  `None` is returned if
     /// the argument was not required, and was also not provided.
@@ -67,16 +68,22 @@ pub trait ClapMe : Sized {
     /// Test the help message
     fn test_help() -> String {
         let info = ArgInfo::new("");
-        let mut help_data = Vec::new();
-        Self::augment_clap(info, clap::App::new("foo")).write_help(&mut help_data).unwrap();
-        String::from_utf8_lossy(&help_data).into_owned()
+        Self::with_clap(info, clap::App::new("foo"),
+                        |a| {
+                            let mut help_data = Vec::new();
+                            a.write_help(&mut help_data).unwrap();
+                            String::from_utf8_lossy(&help_data).into_owned()
+                        })
     }
 
     /// Parse command line arguments.
     fn parse_args() -> Self {
-        let matches = Self::augment_clap(ArgInfo::new(""),
-                                         clap::App::new("foo")).get_matches();
-        Self::from_clap("", &matches).unwrap()
+        Self::with_clap(ArgInfo::new(""),
+                        clap::App::new("foo"),
+                        |a| {
+                            let matches = a.get_matches();
+                            Self::from_clap("", &matches).unwrap()
+                        })
     }
 
     /// Parse command line arguments.
@@ -85,17 +92,20 @@ pub trait ClapMe : Sized {
         I: IntoIterator<Item = T>,
         T: Into<OsString> + Clone,
     {
-        let matches =
-            Self::augment_clap(ArgInfo::new(""),
-                               clap::App::new("foo")).get_matches_from_safe(args)?;
-        Ok(Self::from_clap("", &matches).unwrap())
+        Self::with_clap(ArgInfo::new(""),
+                        clap::App::new("foo"),
+                        |a| {
+                            let matches = a.get_matches_from_safe(args)?;
+                            Ok(Self::from_clap("", &matches).unwrap())
+                        })
     }
 }
 
 impl ClapMe for bool {
-    fn augment_clap<'a, 'b>(info: ArgInfo<'a>, app: clap::App<'a,'b>) -> clap::App<'a,'b> {
-        app.arg(clap::Arg::with_name(info.name).long(info.name)
-                .help(&info.help))
+    fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
+                    f: impl FnOnce(clap::App) -> T) -> T {
+        f(app.arg(clap::Arg::with_name(info.name).long(info.name)
+                .help(&info.help)))
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(matches.is_present(name))
@@ -105,13 +115,15 @@ impl ClapMe for bool {
 macro_rules! impl_fromstr {
     ($t:ty) => {
         impl ClapMe for $t {
-            fn augment_clap<'a, 'b>(info: ArgInfo<'a>, app: clap::App<'a,'b>) -> clap::App<'a,'b> {
-                app.arg(clap::Arg::with_name(info.name)
-                        .long(info.name)
-                        .takes_value(true)
-                        .required(info.required)
-                        .help(&info.help)
-                        .validator(|s| Self::from_str(&s).map(|_| ()).map_err(|e| e.to_string())))
+            fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
+                            f: impl FnOnce(clap::App) -> T) -> T {
+                f(app.arg(clap::Arg::with_name(info.name)
+                          .long(info.name)
+                          .takes_value(true)
+                          .required(info.required)
+                          .help(&info.help)
+                          .validator(|s| Self::from_str(&s).map(|_| ())
+                                     .map_err(|e| e.to_string()))))
             }
             fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
                 matches.value_of(name).map(|s| Self::from_str(s).unwrap())
@@ -133,27 +145,69 @@ impl_fromstr!(f32);
 impl_fromstr!(f64);
 
 impl<T: ClapMe> ClapMe for Option<T> {
-    fn augment_clap<'a, 'b>(mut info: ArgInfo<'a>, app: clap::App<'a,'b>) -> clap::App<'a,'b> {
+    fn with_clap<TT: 'static>(mut info: ArgInfo, app: clap::App,
+                              f: impl FnOnce(clap::App) -> TT) -> TT {
         info.required = false;
-        T::augment_clap(info, app)
+        T::with_clap(info, app, f)
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(T::from_clap(name, matches))
     }
 }
 
-impl<T> ClapMe for Vec<T> where T: FromStr, <T as FromStr>::Err: std::fmt::Debug {
-    fn augment_clap<'a, 'b>(info: ArgInfo<'a>, app: clap::App<'a,'b>) -> clap::App<'a,'b> {
-        app.arg(clap::Arg::with_name(info.name)
-                .long(info.name)
-                .takes_value(true)
-                .required(false)
-                .multiple(true)
-                .help(&info.help)
-                .validator(|s| T::from_str(&s).map(|_| ()).map_err(|_| "oops".to_owned())))
+impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::fmt::Debug {
+    fn with_clap<TT: 'static>(info: ArgInfo, app: clap::App,
+                              f: impl FnOnce(clap::App) -> TT) -> TT {
+        f(app.arg(clap::Arg::with_name(info.name)
+                  .long(info.name)
+                  .takes_value(true)
+                  .required(false)
+                  .multiple(true)
+                  .help(&info.help)
+                  .validator(|s| T::from_str(&s).map(|_| ())
+                             .map_err(|_| "oops".to_owned()))))
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(matches.values_of(name).unwrap_or(clap::Values::default())
              .map(|s| T::from_str(s).unwrap()).collect())
+    }
+}
+
+impl<A: ClapMe, B: ClapMe> ClapMe for (A,B) {
+    fn with_clap<T: 'static>(mut info: ArgInfo,
+                             app: clap::App,
+                             f: impl FnOnce(clap::App) -> T)
+                             -> T {
+        info.multiple = false;
+        let prefix: String = match info.name.chars().next() {
+            None | Some('_') => "".to_string(),
+            _ => { let mut x = info.name.to_string(); x.push('-'); x },
+        };
+
+        let mut foo: String = prefix.clone();
+        foo.push_str("first");
+        let newinfo = ArgInfo {
+            name: &foo,
+            help: "help on first",
+            ..info
+        };
+
+        let f = move |app: clap::App| { A::with_clap(newinfo, app, f) };
+
+        let mut bar: String = prefix.clone();
+        bar.push_str("second");
+        let newinfo2 = ArgInfo {
+            name: &bar,
+            help: "help on second",
+            ..info
+        };
+
+        let f = move |app: clap::App| { B::with_clap(newinfo2, app, f) };
+
+        f(app)
+    }
+    fn from_clap<'a,'b>(_name: &str, app: &clap::ArgMatches) -> Option<Self> {
+        // FIXME need prefix here also
+        Some( (A::from_clap("first", app)?, B::from_clap("second", app)?) )
     }
 }

@@ -9,6 +9,8 @@
 //! This crate is custom derive for ClapMe. It should not be used
 //! directly.
 
+#![recursion_limit="128"]
+
 extern crate proc_macro;
 extern crate syn;
 #[macro_use]
@@ -80,23 +82,34 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 println!("f is {:?}", f.ident.as_ref().unwrap());
             }
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let idents = f.iter().map(|x| x.ident.clone().unwrap().to_string());
-            let types = f.iter().map(|x| x.ty.clone());
-            let f2: Vec<_> = fields.named.clone().into_iter().collect();
-            let idents2 = f2.iter().map(|x| x.ident.clone().unwrap());
-            let types2 = f2.iter().map(|x| x.ty.clone());
-            let idents3 = fields.named.clone().into_iter()
-                .map(|x| x.ident.clone().unwrap().to_string());
-            let docs: Vec<_> = fields.named.clone().into_iter()
-                .map(|x| get_doc_comment(&x.attrs)).collect();
-            println!("docs are {:?}", docs);
+            let idents = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let types = f.iter().rev().map(|x| x.ty.clone());
+            let idents2 = f.iter().rev().map(|x| x.ident.clone().unwrap());
+            let types2 = f.iter().rev().map(|x| x.ty.clone());
+            let idents3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
             quote!{
-                fn augment_clap<'a, 'b>(mut info: clapme::ArgInfo<'a>,
-                                        app: clapme::clap::App<'a,'b>)
-                                        -> clapme::clap::App<'a,'b> {
+                fn with_clap<T: 'static>(mut info: clapme::ArgInfo,
+                                         app: clapme::clap::App,
+                                         f: impl FnOnce(clapme::clap::App) -> T)
+                                         -> T {
                     info.multiple = false;
-                    #( info.name = #idents; info.help = #docs; let app = #types::augment_clap(info.clone(), app); )*
-                    app
+                    let prefix: String = match info.name.chars().next() {
+                        None | Some('_') => "".to_string(),
+                        _ => { let mut x = info.name.to_string(); x.push('-'); x },
+                    };
+                    #( let mut foo: String = prefix.clone();
+                       foo.push_str(#idents);
+                       let newinfo = clapme::ArgInfo {
+                           name: &foo,
+                           help: #docs,
+                           ..info
+                       };
+                       let f = |app: clapme::clap::App| {
+                           #types::with_clap(newinfo, app, f)
+                       };
+                    )*
+                    f(app)
                 }
                 fn from_clap<'a,'b>(_name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
                     Some( #name {
