@@ -141,6 +141,7 @@ impl_fromstr!(u16);
 impl_fromstr!(u32);
 impl_fromstr!(u64);
 impl_fromstr!(u128);
+impl_fromstr!(usize);
 impl_fromstr!(f32);
 impl_fromstr!(f64);
 
