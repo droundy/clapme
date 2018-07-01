@@ -82,11 +82,11 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 println!("f is {:?}", f.ident.as_ref().unwrap());
             }
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let idents = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let names = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let types = f.iter().rev().map(|x| x.ty.clone());
-            let idents2 = f.iter().rev().map(|x| x.ident.clone().unwrap());
+            let idents = f.iter().rev().map(|x| x.ident.clone().unwrap());
             let types2 = f.iter().rev().map(|x| x.ty.clone());
-            let idents3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
             quote!{
                 fn with_clap<T: 'static>(mut info: clapme::ArgInfo,
@@ -98,10 +98,9 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         None | Some('_') => "".to_string(),
                         _ => { let mut x = info.name.to_string(); x.push('-'); x },
                     };
-                    #( let mut foo: String = prefix.clone();
-                       foo.push_str(#idents);
+                    #( let argname: String = format!("{}{}", &prefix, #names);
                        let newinfo = clapme::ArgInfo {
-                           name: &foo,
+                           name: &argname,
                            help: #docs,
                            ..info
                        };
@@ -111,9 +110,14 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     )*
                     f(app)
                 }
-                fn from_clap<'a,'b>(_name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
+                    let prefix: String = match name.chars().next() {
+                        None | Some('_') => "".to_string(),
+                        _ => format!("{}-", name),
+                    };
                     Some( #name {
-                        #( #idents2: #types2::from_clap(#idents3, app)?,  )*
+                        #( #idents: #types2::from_clap(&format!("{}{}", &prefix, #names2),
+                                                       app)?,  )*
                     })
                 }
             }
