@@ -20,15 +20,15 @@ fn required_option() {
     #[derive(ClapMe, PartialEq, Debug)]
     struct SuperOpt {
         arg: Opt,
-        other: i32
+        other: String,
     }
     println!("help: {}", SuperOpt::test_help());
     assert!(SuperOpt::test_help().contains("--arg"));
     assert!(SuperOpt::test_help().contains("--arg-arg"));
 
     assert_eq!(
-        SuperOpt { arg: Opt { arg: 7 }, other: 0 },
-        SuperOpt::parse_from(&["", "--arg-arg", "7", "--other", "0"]).unwrap());
+        SuperOpt { arg: Opt { arg: 7 }, other: "hello".to_string() },
+        SuperOpt::parse_from(&["", "--arg-arg", "7", "--other", "hello"]).unwrap());
 
     assert!(SuperOpt::parse_from(&["", "--arg"]).is_err());
 }

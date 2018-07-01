@@ -144,6 +144,20 @@ impl_fromstr!(u128);
 impl_fromstr!(f32);
 impl_fromstr!(f64);
 
+impl ClapMe for String {
+    fn with_clap<T: 'static>(mut info: ArgInfo, app: clap::App,
+                             f: impl FnOnce(clap::App) -> T) -> T {
+        f(app.arg(clap::Arg::with_name(info.name)
+                  .long(info.name)
+                  .takes_value(true)
+                  .required(info.required)
+                  .help(&info.help)))
+    }
+    fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+        matches.value_of(name).map(|s| s.to_string())
+    }
+}
+
 impl<T: ClapMe> ClapMe for Option<T> {
     fn with_clap<TT: 'static>(mut info: ArgInfo, app: clap::App,
                               f: impl FnOnce(clap::App) -> TT) -> TT {
