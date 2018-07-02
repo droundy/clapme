@@ -65,11 +65,12 @@ fn optional_option() {
         other: String,
     }
     println!("help: {}", SuperOpt::test_help());
-    assert!(SuperOpt::test_help().contains("--arg "));
+    assert!(SuperOpt::test_help().contains("--arg1 "));
+    assert!(SuperOpt::test_help().contains("--arg2 "));
 
     assert_eq!(
         SuperOpt { _arg: Some(Foo { arg1: 37, arg2: -3 }), other: "hello".to_string() },
-        SuperOpt::parse_from(&["", "--arg1", "37", "--arg2", "-3",
+        SuperOpt::parse_from(&["", "--arg1", "37", "--arg2=-3",
                                "--other", "hello"]).unwrap());
 
     assert_eq!(
