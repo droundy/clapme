@@ -105,7 +105,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                            ..info
                        };
                        let f = |app: clapme::clap::App| {
-                           #types::with_clap(newinfo, app, f)
+                           <#types>::with_clap(newinfo, app, f)
                        };
                     )*
                     f(app)
@@ -116,7 +116,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         _ => format!("{}-", name),
                     };
                     Some( #name {
-                        #( #idents: #types2::from_clap(&format!("{}{}", &prefix, #names2),
+                        #( #idents: <#types2>::from_clap(&format!("{}{}", &prefix, #names2),
                                                        app)?,  )*
                     })
                 }
