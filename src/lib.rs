@@ -62,8 +62,13 @@ pub trait ClapMe : Sized + 'static {
     }
     /// Parses the clap info to obtain a value.  `None` is returned if
     /// the argument was not required, and was also not provided.
-    fn from_clap<'a,'b>(_name: &str, _app: &clap::ArgMatches) -> Option<Self> {
+    fn from_clap(_name: &str, _app: &clap::ArgMatches) -> Option<Self> {
         None
+    }
+    /// Parses the clap info to obtain a value.  `None` is returned if
+    /// the argument was not required, and was also not provided.
+    fn requires_flags(name: &str) -> Vec<String> {
+        vec![name.to_string()]
     }
     /// Test the help message
     fn test_help() -> String {
@@ -109,6 +114,9 @@ impl ClapMe for bool {
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(matches.is_present(name))
+    }
+    fn requires_flags(name: &str) -> Vec<String> {
+        vec![]
     }
 }
 
@@ -168,6 +176,9 @@ impl<T: ClapMe> ClapMe for Option<T> {
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(T::from_clap(name, matches))
     }
+    fn requires_flags(name: &str) -> Vec<String> {
+        vec![]
+    }
 }
 
 impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::fmt::Debug {
@@ -185,6 +196,9 @@ impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(matches.values_of(name).unwrap_or(clap::Values::default())
              .map(|s| T::from_str(s).unwrap()).collect())
+    }
+    fn requires_flags(name: &str) -> Vec<String> {
+        vec![]
     }
 }
 
