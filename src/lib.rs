@@ -34,6 +34,8 @@ pub struct ArgInfo<'a> {
     pub name: &'a str,
     /// Is the argument required?
     pub required: bool,
+    /// Flags that are required by this argument.
+    pub required_flags: &'a [&'a str],
     /// Can we repeat the flag?
     pub multiple: bool,
     /// Help string (if any)
@@ -46,6 +48,7 @@ impl<'a> ArgInfo<'a> {
         ArgInfo {
             name: name,
             required: true,
+            required_flags: &[],
             multiple: false,
             help: "",
         }
@@ -110,12 +113,13 @@ impl ClapMe for bool {
     fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
                     f: impl FnOnce(clap::App) -> T) -> T {
         f(app.arg(clap::Arg::with_name(info.name).long(info.name)
-                .help(&info.help)))
+                  .requires_all(info.required_flags)
+                  .help(&info.help)))
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(matches.is_present(name))
     }
-    fn requires_flags(name: &str) -> Vec<String> {
+    fn requires_flags(_name: &str) -> Vec<String> {
         vec![]
     }
 }
@@ -124,10 +128,12 @@ macro_rules! impl_fromstr {
     ($t:ty) => {
         impl ClapMe for $t {
             fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
-                            f: impl FnOnce(clap::App) -> T) -> T {
+                                     f: impl FnOnce(clap::App) -> T) -> T {
+                println!("{} requires {:?}", info.name, info.required_flags);
                 f(app.arg(clap::Arg::with_name(info.name)
                           .long(info.name)
                           .takes_value(true)
+                          .requires_all(info.required_flags)
                           .required(info.required)
                           .help(&info.help)
                           .validator(|s| Self::from_str(&s).map(|_| ())
@@ -154,11 +160,12 @@ impl_fromstr!(f32);
 impl_fromstr!(f64);
 
 impl ClapMe for String {
-    fn with_clap<T: 'static>(mut info: ArgInfo, app: clap::App,
+    fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
                              f: impl FnOnce(clap::App) -> T) -> T {
         f(app.arg(clap::Arg::with_name(info.name)
                   .long(info.name)
                   .takes_value(true)
+                  .requires_all(info.required_flags)
                   .required(info.required)
                   .help(&info.help)))
     }
@@ -176,7 +183,7 @@ impl<T: ClapMe> ClapMe for Option<T> {
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
         Some(T::from_clap(name, matches))
     }
-    fn requires_flags(name: &str) -> Vec<String> {
+    fn requires_flags(_name: &str) -> Vec<String> {
         vec![]
     }
 }
@@ -188,6 +195,7 @@ impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::
                   .long(info.name)
                   .takes_value(true)
                   .required(false)
+                  .requires_all(info.required_flags)
                   .multiple(true)
                   .help(&info.help)
                   .validator(|s| T::from_str(&s).map(|_| ())
@@ -197,7 +205,7 @@ impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::
         Some(matches.values_of(name).unwrap_or(clap::Values::default())
              .map(|s| T::from_str(s).unwrap()).collect())
     }
-    fn requires_flags(name: &str) -> Vec<String> {
+    fn requires_flags(_name: &str) -> Vec<String> {
         vec![]
     }
 }

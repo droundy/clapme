@@ -9,7 +9,7 @@
 //! This crate is custom derive for ClapMe. It should not be used
 //! directly.
 
-#![recursion_limit="128"]
+#![recursion_limit="256"]
 
 extern crate proc_macro;
 extern crate syn;
@@ -87,6 +87,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let idents = f.iter().rev().map(|x| x.ident.clone().unwrap());
             let types2 = f.iter().rev().map(|x| x.ty.clone());
             let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
             quote!{
                 fn with_clap<T: 'static>(mut info: clapme::ArgInfo,
@@ -99,9 +100,13 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         _ => { let mut x = info.name.to_string(); x.push('-'); x },
                     };
                     #( let argname: String = format!("{}{}", &prefix, #names);
+                       let new_req: Vec<String> = Self::requires_flags(info.name);
+                       let mut new_req: Vec<&str> = new_req.iter().map(AsRef::as_ref).collect();
+                       new_req.extend(info.required_flags);
                        let newinfo = clapme::ArgInfo {
                            name: &argname,
                            help: #docs,
+                           required_flags: &new_req,
                            ..info
                        };
                        let f = |app: clapme::clap::App| {
@@ -119,6 +124,13 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         #( #idents: <#types2>::from_clap(&format!("{}{}", &prefix, #names2),
                                                        app)?,  )*
                     })
+                }
+                fn requires_flags(name: &str) -> Vec<String> {
+                    let prefix: String = match name.chars().next() {
+                        None | Some('_') => "".to_string(),
+                        _ => format!("{}-", name),
+                    };
+                    vec![ #( format!("{}{}", &prefix, #names3),  )* ]
                 }
             }
         },
