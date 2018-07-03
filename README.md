@@ -1,4 +1,4 @@
-# ClapMe
+# ClapMe [![Build Status](https://travis-ci.org/droundy/clapme.svg?branch=master)](https://travis-ci.org/droundy/clapme)
 
 Parse command line arguments by defining a struct.  It combines
 [clap](https://crates.io/crates/clap) with custom derive.

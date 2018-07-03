@@ -11,8 +11,8 @@ readme = "README.md"
 
 [features]
 
-# [badges]
-# travis-ci = { repository = "droundy/clapme" }
+[badges]
+travis-ci = { repository = "droundy/clapme" }
 
 [dependencies]
 clap = "2.32"
