@@ -1,6 +1,7 @@
 # ClapMe
 
-Parse command line arguments by defining a struct.  It combines [clap](https://crates.io/crates/clap) with custom derive.
+Parse command line arguments by defining a struct.  It combines
+[clap](https://crates.io/crates/clap) with custom derive.
 
 ## License
 

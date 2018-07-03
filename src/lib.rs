@@ -10,6 +10,36 @@
 
 //! This crate defines the `ClapMe` trait and its custom derrive.
 
+
+//! ## How to `derive(ClapMe)`
+//!
+//! First, let's look at an example:
+//!
+//! ```should_panic
+//! #[macro_use]
+//! extern crate clapme;
+//!
+//! use std::path::PathBuf;
+//! use clapme::ClapMe;
+//!
+//! #[derive(Debug, ClapMe)]
+//! struct Opt {
+//!     /// Activate debug mode
+//!     debug: bool,
+//!     /// Set speed
+//!     speed: f64,
+//!     // / Input file
+//!     //input: PathBuf,
+//!     // / Output file, stdout if not present
+//!     //output: Option<PathBuf>,
+//! }
+//!
+//! fn main() {
+//!     let opt = Opt::parse_args();
+//!     println!("{:?}", opt);
+//! }
+//! ```
+
 extern crate clap as _clap;
 
 #[allow(unused_imports)]
@@ -56,9 +86,9 @@ impl<'a> ArgInfo<'a> {
 }
 
 /// Any type of trait `ClapMe` can be used as an argument value.
-pub trait ClapMe : Sized + 'static {
+pub trait ClapMe : Sized {
     /// Updates and returns the corresponding `clap::App`.
-    fn with_clap<T: 'static>(_info: ArgInfo,
+    fn with_clap<T>(_info: ArgInfo,
                     app: clap::App,
                     f: impl FnOnce(clap::App) -> T) -> T {
         f(app)
@@ -110,7 +140,7 @@ pub trait ClapMe : Sized + 'static {
 }
 
 impl ClapMe for bool {
-    fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
+    fn with_clap<T>(info: ArgInfo, app: clap::App,
                     f: impl FnOnce(clap::App) -> T) -> T {
         f(app.arg(clap::Arg::with_name(info.name).long(info.name)
                   .requires_all(info.required_flags)
@@ -127,8 +157,8 @@ impl ClapMe for bool {
 macro_rules! impl_fromstr {
     ($t:ty) => {
         impl ClapMe for $t {
-            fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
-                                     f: impl FnOnce(clap::App) -> T) -> T {
+            fn with_clap<T>(info: ArgInfo, app: clap::App,
+                            f: impl FnOnce(clap::App) -> T) -> T {
                 f(app.arg(clap::Arg::with_name(info.name)
                           .long(info.name)
                           .takes_value(true)
@@ -159,8 +189,8 @@ impl_fromstr!(f32);
 impl_fromstr!(f64);
 
 impl ClapMe for String {
-    fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
-                             f: impl FnOnce(clap::App) -> T) -> T {
+    fn with_clap<T>(info: ArgInfo, app: clap::App,
+                    f: impl FnOnce(clap::App) -> T) -> T {
         f(app.arg(clap::Arg::with_name(info.name)
                   .long(info.name)
                   .takes_value(true)
@@ -174,8 +204,8 @@ impl ClapMe for String {
 }
 
 impl<T: ClapMe> ClapMe for Option<T> {
-    fn with_clap<TT: 'static>(mut info: ArgInfo, app: clap::App,
-                              f: impl FnOnce(clap::App) -> TT) -> TT {
+    fn with_clap<TT>(mut info: ArgInfo, app: clap::App,
+                     f: impl FnOnce(clap::App) -> TT) -> TT {
         info.required = false;
         T::with_clap(info, app, f)
     }
@@ -187,9 +217,9 @@ impl<T: ClapMe> ClapMe for Option<T> {
     }
 }
 
-impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::fmt::Debug {
-    fn with_clap<TT: 'static>(info: ArgInfo, app: clap::App,
-                              f: impl FnOnce(clap::App) -> TT) -> TT {
+impl<T> ClapMe for Vec<T> where T: FromStr, <T as FromStr>::Err: std::fmt::Debug {
+    fn with_clap<TT>(info: ArgInfo, app: clap::App,
+                     f: impl FnOnce(clap::App) -> TT) -> TT {
         f(app.arg(clap::Arg::with_name(info.name)
                   .long(info.name)
                   .takes_value(true)
@@ -210,10 +240,9 @@ impl<T> ClapMe for Vec<T> where T: FromStr + 'static, <T as FromStr>::Err: std::
 }
 
 impl<A: ClapMe, B: ClapMe> ClapMe for (A,B) {
-    fn with_clap<T: 'static>(mut info: ArgInfo,
-                             app: clap::App,
-                             f: impl FnOnce(clap::App) -> T)
-                             -> T {
+    fn with_clap<T>(mut info: ArgInfo,
+                    app: clap::App,
+                    f: impl FnOnce(clap::App) -> T) -> T {
         info.multiple = false;
         let prefix: String = match info.name.chars().next() {
             None | Some('_') => "".to_string(),

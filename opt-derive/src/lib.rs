@@ -85,10 +85,10 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
             quote!{
-                fn with_clap<T: 'static>(mut info: clapme::ArgInfo,
-                                         app: clapme::clap::App,
-                                         f: impl FnOnce(clapme::clap::App) -> T)
-                                         -> T {
+                fn with_clap<T>(mut info: clapme::ArgInfo,
+                                app: clapme::clap::App,
+                                f: impl FnOnce(clapme::clap::App) -> T)
+                                -> T {
                     info.multiple = false;
                     let prefix: String = match info.name.chars().next() {
                         None | Some('_') => "".to_string(),
