@@ -28,9 +28,9 @@ fn required_option() {
 
     assert_eq!(
         SuperOpt { arg: Opt { arg: 7 }, other: "hello".to_string() },
-        SuperOpt::parse_from(&["", "--arg-arg", "7", "--other", "hello"]).unwrap());
+        SuperOpt::from_iter(&["", "--arg-arg", "7", "--other", "hello"]).unwrap());
 
-    assert!(SuperOpt::parse_from(&["", "--arg"]).is_err());
+    assert!(SuperOpt::from_iter(&["", "--arg"]).is_err());
 }
 
 #[test]
@@ -49,7 +49,7 @@ fn required_option_with_flattened_name() {
 
     assert_eq!(
         SuperOpt { _arg: Opt { arg: 7 }, other: "hello".to_string() },
-        SuperOpt::parse_from(&["", "--arg", "7", "--other", "hello"]).unwrap());
+        SuperOpt::from_iter(&["", "--arg", "7", "--other", "hello"]).unwrap());
 }
 
 #[test]
@@ -70,14 +70,14 @@ fn optional_option() {
 
     assert_eq!(
         SuperOpt { _arg: Some(Foo { arg1: 37, arg2: -3 }), other: "hello".to_string() },
-        SuperOpt::parse_from(&["", "--arg1", "37", "--arg2=-3",
+        SuperOpt::from_iter(&["", "--arg1", "37", "--arg2=-3",
                                "--other", "hello"]).unwrap());
 
     assert_eq!(
         SuperOpt { _arg: None, other: "hello".to_string() },
-        SuperOpt::parse_from(&["", "--other", "hello"]).unwrap());
+        SuperOpt::from_iter(&["", "--other", "hello"]).unwrap());
 
-    assert!(SuperOpt::parse_from(&["", "--arg1", "7", "--other", "hello"]).is_err());
+    assert!(SuperOpt::from_iter(&["", "--arg1", "7", "--other", "hello"]).is_err());
 
-    assert!(SuperOpt::parse_from(&["", "--arg2", "7", "--other", "hello"]).is_err());
+    assert!(SuperOpt::from_iter(&["", "--arg2", "7", "--other", "hello"]).is_err());
 }

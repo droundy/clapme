@@ -28,11 +28,11 @@ fn unique_flag() {
 
     assert_eq!(
         Opt { alice: true },
-        Opt::parse_from(&["", "--alice"]).unwrap());
+        Opt::from_iter(&["", "--alice"]).unwrap());
 
     assert_eq!(
         Opt { alice: false },
-        Opt::parse_from(&[""]).unwrap());
+        Opt::from_iter(&[""]).unwrap());
 
-    assert!(Opt::parse_from(&["", "--bob"]).is_err());
+    assert!(Opt::from_iter(&["", "--bob"]).is_err());
 }

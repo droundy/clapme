@@ -23,7 +23,7 @@ fn required_option() {
 
     assert_eq!(
         Opt { arg: 7 },
-        Opt::parse_from(&["", "--arg", "7"]).unwrap());
+        Opt::from_iter(&["", "--arg", "7"]).unwrap());
 
-    assert!(Opt::parse_from(&["", "--arg"]).is_err());
+    assert!(Opt::from_iter(&["", "--arg"]).is_err());
 }

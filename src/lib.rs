@@ -125,7 +125,7 @@ pub trait ClapMe : Sized {
     }
 
     /// Parse command line arguments.
-    fn parse_from<I,T>(args: I) -> Result<Self, clap::Error>
+    fn from_iter<I,T>(args: I) -> Result<Self, clap::Error>
         where
         I: IntoIterator<Item = T>,
         T: Into<OsString> + Clone,
