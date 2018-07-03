@@ -16,6 +16,6 @@ readme = "README.md"
 
 [dependencies]
 clap = "2.32"
-opt-derive = { path = "opt-derive", version = "0.0.1" }
+clapme_derive = { path = "clapme_derive", version = "0.0.1" }
 
 [workspace]

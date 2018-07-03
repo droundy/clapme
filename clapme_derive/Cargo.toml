@@ -1,9 +1,9 @@
 [package]
-name = "opt-derive"
+name = "clapme_derive"
 version = "0.0.1"
 authors = ["David Roundy <roundyd@physics.oregonstate.edu>"]
 description = "Parse command line arguments by defining a struct, derive crate."
-repository = "https://github.com/daveroundy/easyopt"
+repository = "https://github.com/daveroundy/clapme"
 keywords = ["clap", "cli", "derive"]
 categories = ["command-line-interface"]
 license = "Apache-2.0/MIT"

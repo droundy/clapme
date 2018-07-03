@@ -44,10 +44,10 @@ extern crate clap as _clap;
 
 #[allow(unused_imports)]
 #[macro_use]
-extern crate opt_derive;
+extern crate clapme_derive;
 
 #[doc(hidden)]
-pub use opt_derive::*;
+pub use clapme_derive::*;
 
 use std::str::FromStr;
 use std::ffi::OsString;
