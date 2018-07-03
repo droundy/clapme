@@ -96,6 +96,10 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     };
                     let new_req: Vec<String> = Self::requires_flags(info.name);
                     let mut new_req: Vec<&str> = new_req.iter().map(AsRef::as_ref).collect();
+                    if info.required {
+                        // no use adding dependencies on required flags
+                        new_req = Vec::new();
+                    }
                     new_req.extend(info.required_flags);
                     #( let argname: String = format!("{}{}", &prefix, #names);
                        let my_req: Vec<&str>
