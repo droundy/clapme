@@ -104,7 +104,7 @@ pub trait ClapMe : Sized {
         vec![name.to_string()]
     }
     /// Test the help message
-    fn test_help() -> String {
+    fn help_message() -> String {
         let info = ArgInfo::new("");
         Self::with_clap(info, clap::App::new("foo"),
                         |a| {

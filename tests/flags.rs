@@ -20,10 +20,10 @@ fn unique_flag() {
     }
 
     assert!(
-        Opt::test_help().contains("--alice")
+        Opt::help_message().contains("--alice")
     );
     assert!(
-        Opt::test_help().contains("Documentation for alice")
+        Opt::help_message().contains("Documentation for alice")
     );
 
     assert_eq!(

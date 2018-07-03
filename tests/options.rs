@@ -18,7 +18,7 @@ fn required_option() {
         arg: i32,
     }
     assert!(
-        Opt::test_help().contains("--arg")
+        Opt::help_message().contains("--arg")
     );
 
     assert_eq!(
