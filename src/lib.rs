@@ -103,7 +103,8 @@ pub trait ClapMe : Sized {
     fn requires_flags(name: &str) -> Vec<String> {
         vec![name.to_string()]
     }
-    /// Test the help message
+    /// The help message for this struct.  This is most useful for
+    /// test cases.
     fn help_message() -> String {
         let info = ArgInfo::new("");
         Self::with_clap(info, clap::App::new("foo"),
@@ -124,7 +125,7 @@ pub trait ClapMe : Sized {
                         })
     }
 
-    /// Parse command line arguments.
+    /// Parse arguments given through an iterable thing such as a `Vec` or a slice.
     fn from_iter<I,T>(args: I) -> Result<Self, clap::Error>
         where
         I: IntoIterator<Item = T>,
