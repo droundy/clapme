@@ -28,10 +28,10 @@
 //!     debug: bool,
 //!     /// Set speed
 //!     speed: f64,
-//!     // / Input file
-//!     //input: PathBuf,
-//!     // / Output file, stdout if not present
-//!     //output: Option<PathBuf>,
+//!     /// Input file
+//!     input: PathBuf,
+//!     /// Output file, stdout if not present
+//!     output: Option<PathBuf>,
 //! }
 //!
 //! fn main() {
@@ -172,6 +172,28 @@ macro_rules! impl_fromstr {
                 matches.value_of(name).map(|s| Self::from_str(s).unwrap())
             }
         }
+
+        impl ClapMe for Vec<$t> {
+            fn with_clap<TT>(info: ArgInfo, app: clap::App,
+                             f: impl FnOnce(clap::App) -> TT) -> TT {
+                f(app.arg(clap::Arg::with_name(info.name)
+                          .long(info.name)
+                          .takes_value(true)
+                          .required(false)
+                          .requires_all(info.required_flags)
+                          .multiple(true)
+                          .help(&info.help)
+                          .validator(|s| <$t>::from_str(&s).map(|_| ())
+                                     .map_err(|_| "oops".to_owned()))))
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                Some(matches.values_of(name).unwrap_or(clap::Values::default())
+                     .map(|s| <$t>::from_str(s).unwrap()).collect())
+            }
+            fn requires_flags(_name: &str) -> Vec<String> {
+                vec![]
+            }
+        }
     }
 }
 
@@ -188,20 +210,48 @@ impl_fromstr!(usize);
 impl_fromstr!(f32);
 impl_fromstr!(f64);
 
-impl ClapMe for String {
-    fn with_clap<T>(info: ArgInfo, app: clap::App,
-                    f: impl FnOnce(clap::App) -> T) -> T {
-        f(app.arg(clap::Arg::with_name(info.name)
-                  .long(info.name)
-                  .takes_value(true)
-                  .requires_all(info.required_flags)
-                  .required(info.required)
-                  .help(&info.help)))
-    }
-    fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
-        matches.value_of(name).map(|s| s.to_string())
+
+macro_rules! impl_from {
+    ($t:ty) => {
+        impl ClapMe for $t {
+            fn with_clap<T>(info: ArgInfo, app: clap::App,
+                            f: impl FnOnce(clap::App) -> T) -> T {
+                f(app.arg(clap::Arg::with_name(info.name)
+                          .long(info.name)
+                          .takes_value(true)
+                          .requires_all(info.required_flags)
+                          .required(info.required)
+                          .help(&info.help)))
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                matches.value_of(name).map(|s| Self::from(s))
+            }
+        }
+
+        impl ClapMe for Vec<$t> {
+            fn with_clap<TT>(info: ArgInfo, app: clap::App,
+                             f: impl FnOnce(clap::App) -> TT) -> TT {
+                f(app.arg(clap::Arg::with_name(info.name)
+                          .long(info.name)
+                          .takes_value(true)
+                          .required(false)
+                          .requires_all(info.required_flags)
+                          .multiple(true)
+                          .help(&info.help)))
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                Some(matches.values_of(name).unwrap_or(clap::Values::default())
+                     .map(|s| <$t>::from(s)).collect())
+            }
+            fn requires_flags(_name: &str) -> Vec<String> {
+                vec![]
+            }
+        }
     }
 }
+
+impl_from!(String);
+impl_from!(std::path::PathBuf);
 
 impl<T: ClapMe> ClapMe for Option<T> {
     fn with_clap<TT>(mut info: ArgInfo, app: clap::App,
@@ -214,65 +264,5 @@ impl<T: ClapMe> ClapMe for Option<T> {
     }
     fn requires_flags(_name: &str) -> Vec<String> {
         vec![]
-    }
-}
-
-impl<T> ClapMe for Vec<T> where T: FromStr, <T as FromStr>::Err: std::fmt::Debug {
-    fn with_clap<TT>(info: ArgInfo, app: clap::App,
-                     f: impl FnOnce(clap::App) -> TT) -> TT {
-        f(app.arg(clap::Arg::with_name(info.name)
-                  .long(info.name)
-                  .takes_value(true)
-                  .required(false)
-                  .requires_all(info.required_flags)
-                  .multiple(true)
-                  .help(&info.help)
-                  .validator(|s| T::from_str(&s).map(|_| ())
-                             .map_err(|_| "oops".to_owned()))))
-    }
-    fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
-        Some(matches.values_of(name).unwrap_or(clap::Values::default())
-             .map(|s| T::from_str(s).unwrap()).collect())
-    }
-    fn requires_flags(_name: &str) -> Vec<String> {
-        vec![]
-    }
-}
-
-impl<A: ClapMe, B: ClapMe> ClapMe for (A,B) {
-    fn with_clap<T>(mut info: ArgInfo,
-                    app: clap::App,
-                    f: impl FnOnce(clap::App) -> T) -> T {
-        info.multiple = false;
-        let prefix: String = match info.name.chars().next() {
-            None | Some('_') => "".to_string(),
-            _ => { let mut x = info.name.to_string(); x.push('-'); x },
-        };
-
-        let mut foo: String = prefix.clone();
-        foo.push_str("first");
-        let newinfo = ArgInfo {
-            name: &foo,
-            help: "help on first",
-            ..info
-        };
-
-        let f = move |app: clap::App| { A::with_clap(newinfo, app, f) };
-
-        let mut bar: String = prefix.clone();
-        bar.push_str("second");
-        let newinfo2 = ArgInfo {
-            name: &bar,
-            help: "help on second",
-            ..info
-        };
-
-        let f = move |app: clap::App| { B::with_clap(newinfo2, app, f) };
-
-        f(app)
-    }
-    fn from_clap<'a,'b>(_name: &str, app: &clap::ArgMatches) -> Option<Self> {
-        // FIXME need prefix here also
-        Some( (A::from_clap("first", app)?, B::from_clap("second", app)?) )
     }
 }
