@@ -35,7 +35,7 @@
 //! }
 //!
 //! fn main() {
-//!     let opt = Opt::parse_args();
+//!     let opt = Opt::from_args();
 //!     println!("{:?}", opt);
 //! }
 //! ```
@@ -115,7 +115,7 @@ pub trait ClapMe : Sized {
     }
 
     /// Parse command line arguments.
-    fn parse_args() -> Self {
+    fn from_args() -> Self {
         Self::with_clap(ArgInfo::new(""),
                         clap::App::new("foo"),
                         |a| {
