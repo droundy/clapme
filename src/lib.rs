@@ -9,11 +9,11 @@
 #![deny(missing_docs)]
 
 //! This crate defines the `ClapMe` trait and its custom derrive.
-
-
+//!
 //! ## How to `derive(ClapMe)`
 //!
-//! First, let's look at an example:
+//! To begin with, let's look at an example of how you might actually
+//! use `ClapMe` in a real program.
 //!
 //! ```should_panic
 //! #[macro_use]
@@ -24,14 +24,14 @@
 //!
 //! #[derive(Debug, ClapMe)]
 //! struct Opt {
-//!     /// Activate debug mode
-//!     debug: bool,
-//!     /// Set speed
-//!     speed: f64,
-//!     /// Input file
-//!     input: PathBuf,
-//!     /// Output file, stdout if not present
-//!     output: Option<PathBuf>,
+//!     /// Filling fraction
+//!     filling_fraction: f64,
+//!     /// Number of atoms
+//!     N: u32,
+//!     /// Output directory, working directory if not present
+//!     dir: Option<PathBuf>,
+//!     /// Activate verbose printing
+//!     verbose: bool,
 //! }
 //!
 //! fn main() {
@@ -39,6 +39,45 @@
 //!     println!("{:?}", opt);
 //! }
 //! ```
+//!
+//! The above example, however, doesn't show you what the options
+//! *mean*.  So instead, this documentation will give examples in the
+//! following way:
+//!
+//! ```
+//! # #[macro_use]
+//! # extern crate clapme;
+//! # 
+//! # use std::path::PathBuf;
+//! # use clapme::ClapMe;
+//! # 
+//! #[derive(Debug, ClapMe)]
+//! struct Opt {
+//!     /// Filling fraction
+//!     filling_fraction: f64,
+//!     /// Number of atoms
+//!     N: u32,
+//!     /// Output directory, working directory if not present
+//!     dir: Option<PathBuf>,
+//!     /// Activate verbose printing
+//!     verbose: bool,
+//! }
+//! # fn main() {
+//! assert_eq!(Opt::help_message("mc"), "mc 
+//!
+//! USAGE:
+//!     mc [FLAGS] [OPTIONS] --N <N> --filling_fraction <filling_fraction>
+//!
+//! FLAGS:
+//!         --verbose    Activate verbose printing
+//!
+//! OPTIONS:
+//!         --N <N>                                  Number of atoms
+//!         --dir <dir>                              Output directory, working directory if not present
+//!         --filling_fraction <filling_fraction>    Filling fraction");
+//! # }
+//! ```
+
 
 extern crate clap as _clap;
 
@@ -105,9 +144,9 @@ pub trait ClapMe : Sized {
     }
     /// The help message for this struct.  This is most useful for
     /// test cases.
-    fn help_message() -> String {
+    fn help_message(cmdname: &str) -> String {
         let info = ArgInfo::new("");
-        Self::with_clap(info, clap::App::new("foo"),
+        Self::with_clap(info, clap::App::new(cmdname),
                         |a| {
                             let mut help_data = Vec::new();
                             a.write_help(&mut help_data).unwrap();

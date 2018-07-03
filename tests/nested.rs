@@ -22,9 +22,9 @@ fn required_option() {
         arg: Opt,
         other: String,
     }
-    println!("help: {}", SuperOpt::help_message());
-    assert!(SuperOpt::help_message().contains("--arg"));
-    assert!(SuperOpt::help_message().contains("--arg-arg"));
+    println!("help: {}", SuperOpt::help_message("foo"));
+    assert!(SuperOpt::help_message("foo").contains("--arg"));
+    assert!(SuperOpt::help_message("foo").contains("--arg-arg"));
 
     assert_eq!(
         SuperOpt { arg: Opt { arg: 7 }, other: "hello".to_string() },
@@ -44,8 +44,8 @@ fn required_option_with_flattened_name() {
         _arg: Opt,
         other: String,
     }
-    println!("help: {}", SuperOpt::help_message());
-    assert!(SuperOpt::help_message().contains("--arg "));
+    println!("help: {}", SuperOpt::help_message("foo"));
+    assert!(SuperOpt::help_message("foo").contains("--arg "));
 
     assert_eq!(
         SuperOpt { _arg: Opt { arg: 7 }, other: "hello".to_string() },
@@ -64,9 +64,9 @@ fn optional_option() {
         _arg: Option<Foo>,
         other: String,
     }
-    println!("help: {}", SuperOpt::help_message());
-    assert!(SuperOpt::help_message().contains("--arg1 "));
-    assert!(SuperOpt::help_message().contains("--arg2 "));
+    println!("help: {}", SuperOpt::help_message("foo"));
+    assert!(SuperOpt::help_message("foo").contains("--arg1 "));
+    assert!(SuperOpt::help_message("foo").contains("--arg2 "));
 
     assert_eq!(
         SuperOpt { _arg: Some(Foo { arg1: 37, arg2: -3 }), other: "hello".to_string() },
