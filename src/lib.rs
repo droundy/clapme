@@ -129,7 +129,6 @@ macro_rules! impl_fromstr {
         impl ClapMe for $t {
             fn with_clap<T: 'static>(info: ArgInfo, app: clap::App,
                                      f: impl FnOnce(clap::App) -> T) -> T {
-                println!("{} requires {:?}", info.name, info.required_flags);
                 f(app.arg(clap::Arg::with_name(info.name)
                           .long(info.name)
                           .takes_value(true)

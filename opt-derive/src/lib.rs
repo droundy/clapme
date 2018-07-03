@@ -78,14 +78,12 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             fields: syn::Fields::Named(ref fields),
             ..
         }) => {
-            for f in fields.named.clone() {
-                println!("f is {:?}", f.ident.as_ref().unwrap());
-            }
             let f: Vec<_> = fields.named.clone().into_iter().collect();
             let names = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let types = f.iter().rev().map(|x| x.ty.clone());
             let idents = f.iter().rev().map(|x| x.ident.clone().unwrap());
             let types2 = f.iter().rev().map(|x| x.ty.clone());
+            let types3 = f.iter().rev().map(|x| x.ty.clone());
             let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
@@ -132,7 +130,9 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         None | Some('_') => "".to_string(),
                         _ => format!("{}-", name),
                     };
-                    vec![ #( format!("{}{}", &prefix, #names3),  )* ]
+                    let mut flags: Vec<String> = Vec::new();
+                    #(flags.extend(<#types3>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
+                    flags
                 }
             }
         },
@@ -145,7 +145,6 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             #myimpl
         }
     };
-    println!("myimpl is {}", myimpl);
     tokens2.into()
 }
 
