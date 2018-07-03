@@ -99,16 +99,16 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         None | Some('_') => "".to_string(),
                         _ => { let mut x = info.name.to_string(); x.push('-'); x },
                     };
+                    let new_req: Vec<String> = Self::requires_flags(info.name);
+                    let mut new_req: Vec<&str> = new_req.iter().map(AsRef::as_ref).collect();
+                    new_req.extend(info.required_flags);
                     #( let argname: String = format!("{}{}", &prefix, #names);
-                       let new_req: Vec<String> = Self::requires_flags(info.name);
-                       let mut new_req: Vec<&str> = new_req.iter().map(AsRef::as_ref).collect();
-                       new_req.extend(info.required_flags);
-                       let new_req: Vec<&str>
+                       let my_req: Vec<&str>
                            = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
                        let newinfo = clapme::ArgInfo {
                            name: &argname,
                            help: #docs,
-                           required_flags: &new_req,
+                           required_flags: &my_req,
                            ..info
                        };
                        let f = |app: clapme::clap::App| {

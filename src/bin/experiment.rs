@@ -3,16 +3,21 @@ extern crate clapme;
 
 use clapme::ClapMe;
 
+#[derive(ClapMe, PartialEq, Debug)]
+struct Opt {
+    arg: i32,
+}
+
 #[derive(ClapMe)]
 struct HelloWorld {
     /// Should we or should we not greet?
     hello: bool,
     /// Our oyster!
-    world: u16,
+    world: Opt,
 }
 
 fn main() {
     let opts = HelloWorld::parse_args();
     println!("hello is {}", opts.hello);
-    println!("world is {}", opts.world);
+    println!("world is {:?}", opts.world);
 }
