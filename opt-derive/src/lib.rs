@@ -17,9 +17,6 @@ extern crate syn;
 extern crate quote;
 extern crate proc_macro2;
 
-use proc_macro2::{Span, TokenStream};
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
 use syn::*;
 
 fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
