@@ -103,6 +103,8 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                        let new_req: Vec<String> = Self::requires_flags(info.name);
                        let mut new_req: Vec<&str> = new_req.iter().map(AsRef::as_ref).collect();
                        new_req.extend(info.required_flags);
+                       let new_req: Vec<&str>
+                           = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
                        let newinfo = clapme::ArgInfo {
                            name: &argname,
                            help: #docs,
