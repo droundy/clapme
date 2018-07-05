@@ -110,6 +110,12 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input: DeriveInput = syn::parse(input).unwrap();
 
     let name = &input.ident;
+    let find_prefix = quote!{
+        let prefix: String = match name.chars().next() {
+            None | Some('_') => "".to_string(),
+            _ => format!("{}-", name),
+        };
+    };
     let myimpl = match input.data {
         Struct(DataStruct {
             fields: syn::Fields::Named(ref fields),
@@ -128,28 +134,20 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 f: impl FnOnce(clapme::clap::App) -> T)
                                 -> T {
                     info.multiple = false;
-                    let prefix: String = match info.name.chars().next() {
-                        None | Some('_') => "".to_string(),
-                        _ => { let mut x = info.name.to_string(); x.push('-'); x },
-                    };
+                    let name = info.name;
+                    #find_prefix
                     #with_clap_stuff
                     f(app)
                 }
                 fn from_clap<'a,'b>(name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
-                    let prefix: String = match name.chars().next() {
-                        None | Some('_') => "".to_string(),
-                        _ => format!("{}-", name),
-                    };
+                    #find_prefix
                     Some( #name {
                         #( #idents: <#types2>::from_clap(&format!("{}{}", &prefix, #names2),
                                                        app)?,  )*
                     })
                 }
                 fn requires_flags(name: &str) -> Vec<String> {
-                    let prefix: String = match name.chars().next() {
-                        None | Some('_') => "".to_string(),
-                        _ => format!("{}-", name),
-                    };
+                    #find_prefix
                     let mut flags: Vec<String> = Vec::new();
                     #(flags.extend(<#types3>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
                     flags
@@ -170,11 +168,8 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 f: impl FnOnce(clapme::clap::App) -> T)
                                 -> T {
                     info.multiple = false;
-                    let prefix: String = match info.name.chars().next() {
-                        None | Some('_') => "".to_string(),
-                        _ => { let mut x = info.name.to_string(); x.push('-'); x },
-                    };
-
+                    let name = info.name;
+                    #find_prefix
                     #( #with_claps )*
                     f(app)
                 }
