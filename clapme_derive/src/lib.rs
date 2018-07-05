@@ -62,6 +62,46 @@ fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
     }
 }
 
+fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
+    match f {
+        syn::Fields::Named(ref fields) => {
+            let f: Vec<_> = fields.named.clone().into_iter().collect();
+            let names = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let types = f.iter().rev().map(|x| x.ty.clone());
+            let names1 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let types1 = f.iter().rev().map(|x| x.ty.clone());
+
+            let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
+            quote!{
+                let mut flags: Vec<String> = Vec::new();
+                if !info.required {
+                    // only add dependencies on flags required by this
+                    // set of fields, but not absolutely required.
+                    #(flags.extend(<#types1>::requires_flags(&format!("{}{}", &prefix, #names1)));)*;
+                }
+                let mut new_req: Vec<&str> = flags.iter().map(AsRef::as_ref).collect();
+                new_req.extend(info.required_flags);
+
+                #( let argname: String = format!("{}{}", &prefix, #names);
+                   let my_req: Vec<&str>
+                   = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
+                   let newinfo = clapme::ArgInfo {
+                       name: &argname,
+                       help: #docs,
+                       required_flags: &my_req,
+                       ..info
+                   };
+                   let f = |app: clapme::clap::App| {
+                       <#types>::with_clap(newinfo, app, f)
+                   };
+                )*
+            }
+        },
+        _ => {
+            panic!("ClapMe only supports named fields so far!")
+        },
+    }
+}
 
 /// Generates the `ClapMe` impl.
 #[proc_macro_derive(ClapMe)]
@@ -76,14 +116,12 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             ..
         }) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
-            let types = f.iter().rev().map(|x| x.ty.clone());
             let idents = f.iter().rev().map(|x| x.ident.clone().unwrap());
             let types2 = f.iter().rev().map(|x| x.ty.clone());
             let types3 = f.iter().rev().map(|x| x.ty.clone());
             let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
-            let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
+            let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()));
             quote!{
                 fn with_clap<T>(mut info: clapme::ArgInfo,
                                 app: clapme::clap::App,
@@ -94,26 +132,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         None | Some('_') => "".to_string(),
                         _ => { let mut x = info.name.to_string(); x.push('-'); x },
                     };
-                    let new_req: Vec<String> = Self::requires_flags(info.name);
-                    let mut new_req: Vec<&str> = new_req.iter().map(AsRef::as_ref).collect();
-                    if info.required {
-                        // no use adding dependencies on required flags
-                        new_req = Vec::new();
-                    }
-                    new_req.extend(info.required_flags);
-                    #( let argname: String = format!("{}{}", &prefix, #names);
-                       let my_req: Vec<&str>
-                           = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
-                       let newinfo = clapme::ArgInfo {
-                           name: &argname,
-                           help: #docs,
-                           required_flags: &my_req,
-                           ..info
-                       };
-                       let f = |app: clapme::clap::App| {
-                           <#types>::with_clap(newinfo, app, f)
-                       };
-                    )*
+                    #with_clap_stuff
                     f(app)
                 }
                 fn from_clap<'a,'b>(name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
@@ -137,8 +156,33 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             }
         },
-        Enum(ref _e) => panic!("FIXME need to handle enum in clapme"),
-        _ => panic!("clapme only supports non-tuple structs and enums"),
+        Enum(ref e) => {
+            let v: Vec<_> = e.variants.iter().collect();
+            let names: Vec<_> = v.iter().map(|x| x.ident.to_string()).collect();
+            println!("variant names are {:?}", names);
+            let fields: Vec<_> = v.iter().map(|x| x.fields.clone()).collect();
+            let with_claps: Vec<_>
+                = fields.iter().map(|f| with_clap_fields(f.clone())).collect();
+            println!("variant with_claps are {:?}", with_claps);
+            let s = quote! {
+                fn with_clap<T>(mut info: clapme::ArgInfo,
+                                app: clapme::clap::App,
+                                f: impl FnOnce(clapme::clap::App) -> T)
+                                -> T {
+                    info.multiple = false;
+                    let prefix: String = match info.name.chars().next() {
+                        None | Some('_') => "".to_string(),
+                        _ => { let mut x = info.name.to_string(); x.push('-'); x },
+                    };
+
+                    #( #with_claps )*
+                    f(app)
+                }
+            };
+            println!("{}", s);
+            s
+        },
+        _ => panic!("ClapMe only supports non-tuple structs and enums"),
     };
 
     let tokens2: proc_macro2::TokenStream = quote!{
@@ -148,4 +192,3 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     };
     tokens2.into()
 }
-
