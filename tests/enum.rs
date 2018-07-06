@@ -24,9 +24,13 @@ fn simple_enum() {
     assert!(Opt::help_message("foo").contains("--second"));
     assert!(Opt::help_message("foo").contains("--third"));
 
-    // assert_eq!(
-    //     Opt::First,
-    //     Opt::from_iter(&["", "--first"]).unwrap());
+    assert_eq!(
+        Opt::First { first: true },
+        Opt::from_iter(&["", "--first"]).unwrap());
+
+    assert_eq!(
+        Opt::Second { second: true },
+        Opt::from_iter(&["", "--second"]).unwrap());
 
     // assert!(Opt::from_iter(&[""]).is_err());
 

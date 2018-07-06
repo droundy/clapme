@@ -62,6 +62,43 @@ fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
     }
 }
 
+
+fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
+    match f {
+        syn::Fields::Named(ref fields) => {
+            let f: Vec<_> = fields.named.clone().into_iter().collect();
+            let name = f[0].ident.clone().unwrap().to_string();
+            quote! {
+                format!("{}{}", prefix, #name)
+            }
+        },
+        _ => {
+            panic!("ClapMe only supports named fields so far!")
+        },
+    }
+}
+
+fn return_with_fields(f: syn::Fields,
+                      name: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    match f {
+        syn::Fields::Named(ref fields) => {
+            let f: Vec<_> = fields.named.clone().into_iter().collect();
+            let names = f.iter().map(|x| x.ident.clone().unwrap().to_string());
+            let types = f.iter().map(|x| x.ty.clone());
+            let idents = f.iter().map(|x| x.ident.clone().unwrap());
+            quote! {
+                return Some( #name {
+                    #( #idents: <#types>::from_clap(&format!("{}{}", &prefix, #names),
+                                                    matches)?,  )*
+                });
+            }
+        },
+        _ => {
+            panic!("ClapMe only supports named fields so far!")
+        },
+    }
+}
+
 fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
     match f {
         syn::Fields::Named(ref fields) => {
@@ -128,6 +165,8 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()));
+            let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
+                                                   quote!(#name));
             quote!{
                 fn with_clap<T>(mut info: clapme::ArgInfo,
                                 app: clapme::clap::App,
@@ -139,12 +178,9 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #with_clap_stuff
                     f(app)
                 }
-                fn from_clap<'a,'b>(name: &str, app: &clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(name: &str, matches: &clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
-                    Some( #name {
-                        #( #idents: <#types2>::from_clap(&format!("{}{}", &prefix, #names2),
-                                                       app)?,  )*
-                    })
+                    #return_struct
                 }
                 fn requires_flags(name: &str) -> Vec<String> {
                     #find_prefix
@@ -162,6 +198,13 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let with_claps: Vec<_>
                 = fields.iter().map(|f| with_clap_fields(f.clone())).collect();
             println!("variant with_claps are {:?}", with_claps);
+            let one_field: Vec<_> = fields.iter().map(|f| one_field_name(f.clone())).collect();
+            let one_field_string: Vec<String>
+                = one_field.iter().map(|f| f.to_string()).collect();
+            let return_enum = v.iter().map(|v| {
+                let variant_name = v.ident.clone();
+                return_with_fields(v.fields.clone(), quote!(#name::#variant_name))
+            }); 
             let s = quote! {
                 fn with_clap<T>(mut info: clapme::ArgInfo,
                                 app: clapme::clap::App,
@@ -172,6 +215,16 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #find_prefix
                     #( #with_claps )*
                     f(app)
+                }
+                fn from_clap<'a,'b>(name: &str, matches: &clapme::clap::ArgMatches) -> Option<Self> {
+                    #find_prefix
+                    #(
+                        if matches.is_present(#one_field) {
+                            #return_enum
+                        }
+                    )*
+                    panic!("Some version of the enum should be present!",
+                           #(one_field_string),*)
                 }
             };
             println!("{}", s);
