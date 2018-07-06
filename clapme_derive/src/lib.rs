@@ -67,9 +67,19 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let name = f[0].ident.clone().unwrap().to_string();
+            let names = f.iter().map(|x| x.ident.clone().unwrap().to_string());
+            let types = f.iter().map(|x| x.ty.clone());
             quote! {
-                format!("{}{}", prefix, #name)
+                {
+                    let mut flagname: Option<String> = None;
+                    #(
+                        let reqs = <types as ClapMe>::requires_flags();
+                        if let Some(&x) = reqs.first() {
+                            flagname = Some(x.clone());
+                        }
+                    )*
+                    flagname.expect("enum must have one required field!")
+                }
             }
         },
         _ => {
@@ -160,7 +170,6 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
             let idents = f.iter().rev().map(|x| x.ident.clone().unwrap());
-            let types2 = f.iter().rev().map(|x| x.ty.clone());
             let types3 = f.iter().rev().map(|x| x.ty.clone());
             let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
@@ -204,13 +213,14 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let return_enum = v.iter().map(|v| {
                 let variant_name = v.ident.clone();
                 return_with_fields(v.fields.clone(), quote!(#name::#variant_name))
-            }); 
+            });
             let s = quote! {
                 fn with_clap<T>(mut info: clapme::ArgInfo,
                                 app: clapme::clap::App,
                                 f: impl FnOnce(clapme::clap::App) -> T)
                                 -> T {
                     info.multiple = false;
+                    info.required = false;
                     let name = info.name;
                     #find_prefix
                     #( #with_claps )*
