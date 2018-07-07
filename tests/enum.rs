@@ -32,7 +32,7 @@ fn simple_enum() {
         Opt::Second { second: 5 },
         Opt::from_iter(&["", "--second", "5"]).unwrap());
 
-    // assert!(Opt::from_iter(&[""]).is_err());
+    assert!(Opt::from_iter(&[""]).is_err());
 
-    // assert!(Opt::from_iter(&["", "--first", "hello", "--second", "5"]).is_err());
+    assert!(Opt::from_iter(&["", "--first", "hello", "--second", "5"]).is_err());
 }

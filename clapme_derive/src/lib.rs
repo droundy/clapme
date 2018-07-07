@@ -73,8 +73,9 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                 {
                     let mut flagname: Option<String> = None;
                     #(
-                        let reqs = <types as ClapMe>::requires_flags();
-                        if let Some(&x) = reqs.first() {
+                        let thisname = format!("{}{}", prefix, #names);
+                        let reqs = <#types as ClapMe>::requires_flags(&thisname);
+                        if let Some(x) = reqs.first() {
                             flagname = Some(x.clone());
                         }
                     )*
@@ -136,6 +137,8 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
                        name: &argname,
                        help: #docs,
                        required_flags: &my_req,
+                       required_unless_one: info.required_unless_one.clone(),
+                       conflicted_flags: info.conflicted_flags.clone(),
                        ..info
                    };
                    let f = |app: clapme::clap::App| {
@@ -169,9 +172,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             ..
         }) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let idents = f.iter().rev().map(|x| x.ident.clone().unwrap());
             let types3 = f.iter().rev().map(|x| x.ty.clone());
-            let names2 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
             let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()));
             let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
@@ -204,12 +205,11 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let names: Vec<_> = v.iter().map(|x| x.ident.to_string()).collect();
             println!("variant names are {:?}", names);
             let fields: Vec<_> = v.iter().map(|x| x.fields.clone()).collect();
-            let with_claps: Vec<_>
-                = fields.iter().map(|f| with_clap_fields(f.clone())).collect();
+            let with_claps: Vec<_> = v.iter().map(|v| with_clap_fields(v.fields.clone())).collect();
             println!("variant with_claps are {:?}", with_claps);
             let one_field: Vec<_> = fields.iter().map(|f| one_field_name(f.clone())).collect();
-            let one_field_string: Vec<String>
-                = one_field.iter().map(|f| f.to_string()).collect();
+            let one_field2 = one_field.clone();
+            let one_field3 = one_field.clone();
             let return_enum = v.iter().map(|v| {
                 let variant_name = v.ident.clone();
                 return_with_fields(v.fields.clone(), quote!(#name::#variant_name))
@@ -219,11 +219,30 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 app: clapme::clap::App,
                                 f: impl FnOnce(clapme::clap::App) -> T)
                                 -> T {
-                    info.multiple = false;
-                    info.required = false;
                     let name = info.name;
                     #find_prefix
-                    #( #with_claps )*
+                    info.multiple = false;
+
+                    let mut conflicts: Vec<String> = Vec::new();
+                    #( conflicts.push(#one_field2); )*
+
+                    let original_conflicted = info.conflicted_flags.clone();
+                    let original_required_unless = info.required_unless_one.clone();
+                    let am_required = info.required || original_required_unless.len() > 0;
+                    info.required = false;
+                    #(
+                        let myself = #one_field3;
+                        info.required_unless_one = original_required_unless.clone();
+                        info.conflicted_flags = original_conflicted.clone();
+                        conflicts.iter().filter(|s| **s != myself).map(|s| {
+                            info.conflicted_flags.push(s.clone());
+                            if am_required {
+                                info.required_unless_one.push(s.clone());
+                            }
+                        }).count();
+
+                        #with_claps
+                    )*
                     f(app)
                 }
                 fn from_clap<'a,'b>(name: &str, matches: &clapme::clap::ArgMatches) -> Option<Self> {
@@ -233,8 +252,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                             #return_enum
                         }
                     )*
-                    panic!("Some version of the enum should be present!",
-                           #(one_field_string),*)
+                    panic!("Some version of the enum should be present!")
                 }
             };
             println!("{}", s);
