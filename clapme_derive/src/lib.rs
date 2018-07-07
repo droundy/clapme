@@ -99,8 +99,9 @@ fn return_with_fields(f: syn::Fields,
             let idents = f.iter().map(|x| x.ident.clone().unwrap());
             quote! {
                 return Some( #name {
-                    #( #idents: <#types>::from_clap(&format!("{}{}", &prefix, #names),
-                                                    matches)?,  )*
+                    #( #idents:
+                        <#types as ClapMe>::from_clap(&format!("{}{}", &prefix, #names),
+                                                      matches)?,  )*
                 });
             }
         },
@@ -125,7 +126,7 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
                 if !info.required {
                     // only add dependencies on flags required by this
                     // set of fields, but not absolutely required.
-                    #(flags.extend(<#types1>::requires_flags(&format!("{}{}", &prefix, #names1)));)*;
+                    #(flags.extend(<#types1 as ClapMe>::requires_flags(&format!("{}{}", &prefix, #names1)));)*;
                 }
                 let mut new_req: Vec<&str> = flags.iter().map(AsRef::as_ref).collect();
                 new_req.extend(info.required_flags);
@@ -142,7 +143,7 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
                        ..info
                    };
                    let f = |app: clapme::clap::App| {
-                       <#types>::with_clap(newinfo, app, f)
+                       <#types as ClapMe>::with_clap(newinfo, app, f)
                    };
                 )*
             }
@@ -195,7 +196,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 fn requires_flags(name: &str) -> Vec<String> {
                     #find_prefix
                     let mut flags: Vec<String> = Vec::new();
-                    #(flags.extend(<#types3>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
+                    #(flags.extend(<#types3 as ClapMe>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
                     flags
                 }
             }
