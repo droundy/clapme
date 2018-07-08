@@ -161,6 +161,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input: DeriveInput = syn::parse(input).unwrap();
 
     let name = &input.ident;
+    let generics = &input.generics;
     let find_prefix = quote!{
         let prefix: String = match name.chars().next() {
             None | Some('_') => "".to_string(),
@@ -179,10 +180,10 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
                                                    quote!(#name));
             quote!{
-                fn with_clap<T>(mut info: clapme::ArgInfo,
+                fn with_clap<ClapMeT>(mut info: clapme::ArgInfo,
                                 app: clapme::clap::App,
-                                f: impl FnOnce(clapme::clap::App) -> T)
-                                -> T {
+                                f: impl FnOnce(clapme::clap::App) -> ClapMeT)
+                                -> ClapMeT {
                     info.multiple = false;
                     let name = info.name;
                     #find_prefix
@@ -216,10 +217,10 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 return_with_fields(v.fields.clone(), quote!(#name::#variant_name))
             });
             let s = quote! {
-                fn with_clap<T>(mut info: clapme::ArgInfo,
+                fn with_clap<ClapMeT>(mut info: clapme::ArgInfo,
                                 app: clapme::clap::App,
-                                f: impl FnOnce(clapme::clap::App) -> T)
-                                -> T {
+                                f: impl FnOnce(clapme::clap::App) -> ClapMeT)
+                                -> ClapMeT {
                     let name = info.name;
                     #find_prefix
                     info.multiple = false;
@@ -256,16 +257,21 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     panic!("Some version of the enum should be present!")
                 }
             };
-            println!("{}", s);
             s
         },
         _ => panic!("ClapMe only supports non-tuple structs and enums"),
     };
 
+    let generic_types = input.generics.type_params();
+    let bounds = quote!{
+        <#(#generic_types: clapme::ClapMe),*>
+    };
+
     let tokens2: proc_macro2::TokenStream = quote!{
-        impl ClapMe for #name {
+        impl#bounds ClapMe for #name#generics {
             #myimpl
         }
     };
+    println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
     tokens2.into()
 }

@@ -14,25 +14,25 @@ use clapme::ClapMe;
 #[test]
 fn simple_enum() {
     #[derive(ClapMe, PartialEq, Debug)]
-    enum Opt {
+    enum EnumOpt {
         First { first: String },
         Second { second: i32 },
         Third { third: u16 },
     }
-    println!("help: {}", Opt::help_message("foo"));
-    assert!(Opt::help_message("foo").contains("--first"));
-    assert!(Opt::help_message("foo").contains("--second"));
-    assert!(Opt::help_message("foo").contains("--third"));
+    println!("help: {}", EnumOpt::help_message("foo"));
+    assert!(EnumOpt::help_message("foo").contains("--first"));
+    assert!(EnumOpt::help_message("foo").contains("--second"));
+    assert!(EnumOpt::help_message("foo").contains("--third"));
 
     assert_eq!(
-        Opt::First { first: "hello".to_string() },
-        Opt::from_iter(&["", "--first", "hello"]).unwrap());
+        EnumOpt::First { first: "hello".to_string() },
+        EnumOpt::from_iter(&["", "--first", "hello"]).unwrap());
 
     assert_eq!(
-        Opt::Second { second: 5 },
-        Opt::from_iter(&["", "--second", "5"]).unwrap());
+        EnumOpt::Second { second: 5 },
+        EnumOpt::from_iter(&["", "--second", "5"]).unwrap());
 
-    assert!(Opt::from_iter(&[""]).is_err());
+    assert!(EnumOpt::from_iter(&[""]).is_err());
 
-    assert!(Opt::from_iter(&["", "--first", "hello", "--second", "5"]).is_err());
+    assert!(EnumOpt::from_iter(&["", "--first", "hello", "--second", "5"]).is_err());
 }
