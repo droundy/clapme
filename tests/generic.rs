@@ -12,7 +12,7 @@ extern crate clapme;
 use clapme::ClapMe;
 
 #[test]
-fn simple_enum() {
+fn simple_generic() {
     #[derive(ClapMe, PartialEq, Debug)]
     struct GenericOpt<T> {
         first: T,
@@ -25,6 +25,28 @@ fn simple_enum() {
     assert_eq!(
         GenericOpt::<i32> { first: 3, second: "hello".to_string() },
         <GenericOpt<i32>>::from_iter(&["", "--first", "3","--second=hello"]).unwrap());
+
+    assert!(<GenericOpt<i32>>::from_iter(&[""]).is_err());
+}
+
+#[test]
+fn optional_generic() {
+    #[derive(ClapMe, PartialEq, Debug)]
+    struct GenericOpt<T> {
+        first: Option<T>,
+        second: String,
+    }
+    println!("help: {}", <GenericOpt<i32>>::help_message("foo"));
+    assert!(<GenericOpt<i32>>::help_message("foo").contains("--first"));
+    assert!(<GenericOpt<i32>>::help_message("foo").contains("--second"));
+
+    assert_eq!(
+        GenericOpt::<i32> { first: Some(3), second: "hello".to_string() },
+        <GenericOpt<i32>>::from_iter(&["", "--first", "3","--second=hello"]).unwrap());
+
+    assert_eq!(
+        GenericOpt::<i32> { first: None, second: "hello".to_string() },
+        <GenericOpt<i32>>::from_iter(&["", "--second=hello"]).unwrap());
 
     assert!(<GenericOpt<i32>>::from_iter(&[""]).is_err());
 }
