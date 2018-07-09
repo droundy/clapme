@@ -218,7 +218,15 @@ macro_rules! impl_fromstr {
                             f: impl FnOnce(clap::App) -> T) -> T {
                 let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
                 let ruo: Vec<_> = info.required_unless_one.iter().map(AsRef::as_ref).collect();
-                if ruo.len() > 0 {
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .help(&info.help)
+                              .validator(|s| Self::from_str(&s).map(|_| ())
+                                         .map_err(|e| e.to_string()))))
+                } else if ruo.len() > 0 {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
@@ -250,16 +258,27 @@ macro_rules! impl_fromstr {
             fn with_clap<TT>(info: ArgInfo, app: clap::App,
                              f: impl FnOnce(clap::App) -> TT) -> TT {
                 let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
-                f(app.arg(clap::Arg::with_name(info.name)
-                          .long(info.name)
-                          .takes_value(true)
-                          .required(false)
-                          .requires_all(info.required_flags)
-                          .conflicts_with_all(&conflicts)
-                          .multiple(true)
-                          .help(&info.help)
-                          .validator(|s| <$t>::from_str(&s).map(|_| ())
-                                     .map_err(|_| "oops".to_owned()))))
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .multiple(true)
+                              .help(&info.help)
+                              .validator(|s| <$t>::from_str(&s).map(|_| ())
+                                         .map_err(|_| "oops".to_owned()))))
+                } else {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .conflicts_with_all(&conflicts)
+                              .multiple(true)
+                              .help(&info.help)
+                              .validator(|s| <$t>::from_str(&s).map(|_| ())
+                                         .map_err(|_| "oops".to_owned()))))
+                }
             }
             fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
                 Some(matches.values_of(name).unwrap_or(clap::Values::default())
@@ -293,7 +312,13 @@ macro_rules! impl_from {
                             f: impl FnOnce(clap::App) -> T) -> T {
                 let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
                 let ruo: Vec<_> = info.required_unless_one.iter().map(AsRef::as_ref).collect();
-                if ruo.len() > 0 {
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .help(&info.help)))
+                } else if ruo.len() > 0 {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
@@ -320,13 +345,22 @@ macro_rules! impl_from {
         impl ClapMe for Vec<$t> {
             fn with_clap<TT>(info: ArgInfo, app: clap::App,
                              f: impl FnOnce(clap::App) -> TT) -> TT {
-                f(app.arg(clap::Arg::with_name(info.name)
-                          .long(info.name)
-                          .takes_value(true)
-                          .required(false)
-                          .requires_all(info.required_flags)
-                          .multiple(true)
-                          .help(&info.help)))
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .multiple(true)
+                              .help(&info.help)))
+                } else {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .multiple(true)
+                              .help(&info.help)))
+                }
             }
             fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
                 Some(matches.values_of(name).unwrap_or(clap::Values::default())
