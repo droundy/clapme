@@ -355,3 +355,17 @@ impl<T: ClapMe> ClapMe for Option<T> {
         vec![]
     }
 }
+
+
+impl<T> ClapMe for std::marker::PhantomData<T> {
+    fn with_clap<TT>(_info: ArgInfo, app: clap::App,
+                     f: impl FnOnce(clap::App) -> TT) -> TT {
+        f(app)
+    }
+    fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+        Some(std::marker::PhantomData)
+    }
+    fn requires_flags(_name: &str) -> Vec<String> {
+        vec![]
+    }
+}
