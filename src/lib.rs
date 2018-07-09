@@ -362,7 +362,7 @@ impl<T> ClapMe for std::marker::PhantomData<T> {
                      f: impl FnOnce(clap::App) -> TT) -> TT {
         f(app)
     }
-    fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+    fn from_clap(_name: &str, _matches: &clap::ArgMatches) -> Option<Self> {
         Some(std::marker::PhantomData)
     }
     fn requires_flags(_name: &str) -> Vec<String> {

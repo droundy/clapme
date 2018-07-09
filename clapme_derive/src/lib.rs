@@ -204,11 +204,10 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         },
         Enum(ref e) => {
             let v: Vec<_> = e.variants.iter().collect();
-            let names: Vec<_> = v.iter().map(|x| x.ident.to_string()).collect();
-            println!("variant names are {:?}", names);
+            // println!("variant names are {:?}", names);
             let fields: Vec<_> = v.iter().map(|x| x.fields.clone()).collect();
             let with_claps: Vec<_> = v.iter().map(|v| with_clap_fields(v.fields.clone())).collect();
-            println!("variant with_claps are {:?}", with_claps);
+            // println!("variant with_claps are {:?}", with_claps);
             let one_field: Vec<_> = fields.iter().map(|f| one_field_name(f.clone())).collect();
             let one_field2 = one_field.clone();
             let one_field3 = one_field.clone();
@@ -272,6 +271,6 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             #myimpl
         }
     };
-    println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
+    // println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
     tokens2.into()
 }
