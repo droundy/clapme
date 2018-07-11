@@ -67,7 +67,7 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f.iter().map(|x| x.ident.clone().unwrap().to_string());
+            let names = f.iter().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let types = f.iter().map(|x| x.ty.clone());
             quote! {
                 {
@@ -99,7 +99,7 @@ fn return_with_fields(f: syn::Fields,
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f.iter().map(|x| x.ident.clone().unwrap().to_string());
+            let names = f.iter().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let types = f.iter().map(|x| x.ty.clone());
             let idents = f.iter().map(|x| x.ident.clone().unwrap());
             quote! {
@@ -123,9 +123,9 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let names = f.iter().rev().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let types = f.iter().rev().map(|x| x.ty.clone());
-            let names1 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let names1 = names.clone();
             let types1 = f.iter().rev().map(|x| x.ty.clone());
 
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
@@ -193,7 +193,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let generics = &input.generics;
     let find_prefix = quote!{
         let prefix: String = match name.chars().next() {
-            None | Some('_') => "".to_string(),
+            None | Some('_') | Some('-') => "".to_string(),
             _ => format!("{}-", name),
         };
     };
@@ -340,4 +340,8 @@ fn camel_case_to_kebab(name: &str) -> String {
         }
         out
     }
+}
+
+fn snake_case_to_kebab(name: &str) -> String {
+    name.to_string().replace("_", "-")
 }

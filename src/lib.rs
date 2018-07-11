@@ -66,7 +66,7 @@
 //! assert_eq!(Opt::help_message("mc"), "mc 
 //!
 //! USAGE:
-//!     mc [FLAGS] [OPTIONS] --N <N> --filling_fraction <filling_fraction>
+//!     mc [FLAGS] [OPTIONS] --N <N> --filling-fraction <filling-fraction>
 //!
 //! FLAGS:
 //!         --verbose    Activate verbose printing
@@ -74,7 +74,7 @@
 //! OPTIONS:
 //!         --N <N>                                  Number of atoms
 //!         --dir <dir>                              Output directory, working directory if not present
-//!         --filling_fraction <filling_fraction>    Filling fraction");
+//!         --filling-fraction <filling-fraction>    Filling fraction");
 //! # }
 //! ```
 

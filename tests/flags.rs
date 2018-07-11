@@ -36,3 +36,30 @@ fn unique_flag() {
 
     assert!(Opt::from_iter(&["", "--bob"]).is_err());
 }
+
+#[test]
+fn flag_with_underscores() {
+    #[derive(ClapMe, PartialEq, Debug)]
+    struct Opt {
+        /// Documentation for awesomeness
+        this_is_awesome: bool,
+    }
+
+    println!("{}", Opt::help_message("foo"));
+    assert!(
+        Opt::help_message("foo").contains("--this-is-awesome ")
+    );
+    assert!(
+        Opt::help_message("foo").contains("Documentation for awesomeness")
+    );
+
+    assert_eq!(
+        Opt { this_is_awesome: true },
+        Opt::from_iter(&["", "--this-is-awesome"]).unwrap());
+
+    assert_eq!(
+        Opt { this_is_awesome: false },
+        Opt::from_iter(&[""]).unwrap());
+
+    assert!(Opt::from_iter(&["", "--bob"]).is_err());
+}
