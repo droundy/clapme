@@ -83,6 +83,11 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                 }
             }
         },
+        syn::Fields::Unit => {
+            quote!{
+                name.to_string()
+            }
+        },
         _ => {
             panic!("ClapMe only supports named fields so far!")
         },
@@ -104,6 +109,9 @@ fn return_with_fields(f: syn::Fields,
                                                       matches)?,  )*
                 });
             }
+        },
+        syn::Fields::Unit => {
+            quote!( return Some( #name ); )
         },
         _ => {
             panic!("ClapMe only supports named fields so far!")
@@ -146,6 +154,27 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
                        <#types as ClapMe>::with_clap(newinfo, app, f)
                    };
                 )*
+            }
+        },
+        syn::Fields::Unit => {
+            quote!{
+                let newinfo = info.clone();
+                let f = |app: clapme::clap::App| {
+                    let conflicts: Vec<_> = newinfo.conflicted_flags.iter().map(AsRef::as_ref).collect();
+                    let ruo: Vec<_> = newinfo.required_unless_one.iter().map(AsRef::as_ref).collect();
+                    if ruo.len() > 0 {
+                        f(app.arg(clapme::clap::Arg::with_name(&name).long(&name)
+                                  .requires_all(newinfo.required_flags)
+                                  .conflicts_with_all(&conflicts)
+                                  .required_unless_one(&ruo)
+                                  .help("FIXME")))
+                    } else {
+                        f(app.arg(clapme::clap::Arg::with_name(&name).long(&name)
+                                  .requires_all(newinfo.required_flags)
+                                  .conflicts_with_all(&conflicts)
+                                  .help("FIXME")))
+                    }
+                };
             }
         },
         _ => {
@@ -204,6 +233,12 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         },
         Enum(ref e) => {
             let v: Vec<_> = e.variants.iter().collect();
+            let vnames: Vec<_> = e.variants.iter().map(|v| camel_case_to_kebab(&v.ident.to_string())).collect();
+            let vnames2 = vnames.clone();
+            let vnames3 = vnames.clone();
+            let vnames4 = vnames.clone();
+            let vnames5 = vnames.clone();
+            let vnames6 = vnames.clone();
             // println!("variant names are {:?}", names);
             let fields: Vec<_> = v.iter().map(|x| x.fields.clone()).collect();
             let with_claps: Vec<_> = v.iter().map(|v| with_clap_fields(v.fields.clone())).collect();
@@ -222,16 +257,23 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 -> ClapMeT {
                     let name = info.name;
                     #find_prefix
+                    let orig_prefix = prefix.clone();
                     info.multiple = false;
 
                     let mut conflicts: Vec<String> = Vec::new();
-                    #( conflicts.push(#one_field2); )*
+                    #(
+                        let name = format!("{}-{}", info.name, #vnames3);
+                        let prefix = format!("{}{}-", orig_prefix, #vnames4);
+                        conflicts.push(#one_field2);
+                    )*
 
                     let original_conflicted = info.conflicted_flags.clone();
                     let original_required_unless = info.required_unless_one.clone();
                     let am_required = info.required || original_required_unless.len() > 0;
                     info.required = false;
                     #(
+                        let name = format!("{}-{}", info.name, #vnames);
+                        let prefix = format!("{}{}-", orig_prefix, #vnames2);
                         let myself = #one_field3;
                         info.required_unless_one = original_required_unless.clone();
                         info.conflicted_flags = original_conflicted.clone();
@@ -248,7 +290,11 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
                 fn from_clap<'a,'b>(name: &str, matches: &clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
+                    let orig_prefix = prefix;
+                    let orig_name = name;
                     #(
+                        let name = format!("{}-{}", orig_name, #vnames5);
+                        let prefix = format!("{}{}-", orig_prefix, #vnames6);
                         if matches.is_present(#one_field) {
                             #return_enum
                         }
@@ -273,4 +319,25 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     };
     // println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
     tokens2.into()
+}
+
+fn camel_case_to_kebab(name: &str) -> String {
+    if name.contains('_') {
+        let mut out = name.to_string().replace("_", "-");
+        if out.chars().last() == Some('-') {
+            out.pop();
+        }
+        out
+    } else {
+        let mut out = String::new();
+        let mut am_on_cap = true;
+        for c in name.chars() {
+            if !am_on_cap && c.is_ascii_uppercase() {
+                out.push('-');
+            }
+            am_on_cap = c.is_ascii_uppercase();
+            out.push(c.to_ascii_lowercase());
+        }
+        out
+    }
 }
