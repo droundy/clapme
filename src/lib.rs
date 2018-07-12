@@ -309,6 +309,13 @@ impl_fromstr!(usize, "INT");
 impl_fromstr!(f32, "FLOAT");
 impl_fromstr!(f64, "FLOAT");
 
+impl_fromstr!(std::net::IpAddr, "ADDR");
+impl_fromstr!(std::net::Ipv4Addr, "ADDR");
+impl_fromstr!(std::net::Ipv6Addr, "ADDR");
+impl_fromstr!(std::net::SocketAddr, "ADDR");
+impl_fromstr!(std::net::SocketAddrV4, "ADDR");
+impl_fromstr!(std::net::SocketAddrV6, "ADDR");
+
 
 macro_rules! impl_from {
     ($t:ty, $tyname:expr) => {
@@ -459,6 +466,7 @@ macro_rules! impl_from_osstr {
 }
 
 impl_from_osstr!(std::path::PathBuf, "PATH");
+impl_from_osstr!(std::ffi::OsString, "STRING");
 
 impl<T: ClapMe> ClapMe for Option<T> {
     fn with_clap<TT>(mut info: ArgInfo, app: clap::App,
