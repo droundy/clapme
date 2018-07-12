@@ -73,7 +73,7 @@
 //!
 //! OPTIONS:
 //!         --N <INT>                     Number of atoms
-//!         --dir <dir>                   Output directory, working directory if not present
+//!         --dir <PATH>                  Output directory, working directory if not present
 //!         --filling-fraction <FLOAT>    Filling fraction");
 //! # }
 //! ```
@@ -311,7 +311,7 @@ impl_fromstr!(f64, "FLOAT");
 
 
 macro_rules! impl_from {
-    ($t:ty) => {
+    ($t:ty, $tyname:expr) => {
         impl ClapMe for $t {
             fn with_clap<T>(info: ArgInfo, app: clap::App,
                             f: impl FnOnce(clap::App) -> T) -> T {
@@ -320,6 +320,7 @@ macro_rules! impl_from {
                 if info.name == "" {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .requires_all(info.required_flags)
                               .required(info.required)
                               .help(&info.help)))
@@ -327,6 +328,7 @@ macro_rules! impl_from {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .requires_all(info.required_flags)
                               .required(info.required)
                               .conflicts_with_all(&conflicts)
@@ -336,6 +338,7 @@ macro_rules! impl_from {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .requires_all(info.required_flags)
                               .required(info.required)
                               .conflicts_with_all(&conflicts)
@@ -353,6 +356,7 @@ macro_rules! impl_from {
                 if info.name == "" {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .required(false)
                               .requires_all(info.required_flags)
                               .multiple(true)
@@ -361,6 +365,7 @@ macro_rules! impl_from {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .required(false)
                               .requires_all(info.required_flags)
                               .multiple(true)
@@ -378,8 +383,8 @@ macro_rules! impl_from {
     }
 }
 
-impl_from!(String);
-impl_from!(std::path::PathBuf);
+impl_from!(String, "STRING");
+impl_from!(std::path::PathBuf, "PATH");
 
 impl<T: ClapMe> ClapMe for Option<T> {
     fn with_clap<TT>(mut info: ArgInfo, app: clap::App,
