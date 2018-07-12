@@ -312,9 +312,9 @@ impl_fromstr!(f64, "FLOAT");
 impl_fromstr!(std::net::IpAddr, "ADDR");
 impl_fromstr!(std::net::Ipv4Addr, "ADDR");
 impl_fromstr!(std::net::Ipv6Addr, "ADDR");
-impl_fromstr!(std::net::SocketAddr, "ADDR");
-impl_fromstr!(std::net::SocketAddrV4, "ADDR");
-impl_fromstr!(std::net::SocketAddrV6, "ADDR");
+impl_fromstr!(std::net::SocketAddr, "ADDR:PORT");
+impl_fromstr!(std::net::SocketAddrV4, "ADDR:PORT");
+impl_fromstr!(std::net::SocketAddrV6, "ADDR:PORT");
 
 
 macro_rules! impl_from {
