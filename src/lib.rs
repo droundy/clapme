@@ -384,7 +384,81 @@ macro_rules! impl_from {
 }
 
 impl_from!(String, "STRING");
-impl_from!(std::path::PathBuf, "PATH");
+
+macro_rules! impl_from_osstr {
+    ($t:ty, $tyname:expr) => {
+        impl ClapMe for $t {
+            fn with_clap<T>(info: ArgInfo, app: clap::App,
+                            f: impl FnOnce(clap::App) -> T) -> T {
+                let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
+                let ruo: Vec<_> = info.required_unless_one.iter().map(AsRef::as_ref).collect();
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .help(&info.help)))
+                } else if ruo.len() > 0 {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .conflicts_with_all(&conflicts)
+                              .required_unless_one(&ruo)
+                              .help(&info.help)))
+                } else {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .conflicts_with_all(&conflicts)
+                              .help(&info.help)))
+                }
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                matches.value_of_os(name).map(|s| Self::from(s))
+            }
+        }
+
+        impl ClapMe for Vec<$t> {
+            fn with_clap<TT>(info: ArgInfo, app: clap::App,
+                             f: impl FnOnce(clap::App) -> TT) -> TT {
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .multiple(true)
+                              .help(&info.help)))
+                } else {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .multiple(true)
+                              .help(&info.help)))
+                }
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                Some(matches.values_of_os(name).unwrap_or(clap::OsValues::default())
+                     .map(|s| <$t>::from(s)).collect())
+            }
+            fn requires_flags(_name: &str) -> Vec<String> {
+                vec![]
+            }
+        }
+    }
+}
+
+impl_from_osstr!(std::path::PathBuf, "PATH");
 
 impl<T: ClapMe> ClapMe for Option<T> {
     fn with_clap<TT>(mut info: ArgInfo, app: clap::App,
