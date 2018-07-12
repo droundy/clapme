@@ -40,9 +40,9 @@
 //! }
 //! ```
 //!
-//! The above example, however, doesn't show you what the options
-//! *mean*.  So instead, this documentation will give examples in the
-//! following way:
+//! The above example shows you how to use clapme, but it doesn't show
+//! you what the options will look like to a user.  So instead, this
+//! documentation will give examples in the following way:
 //!
 //! ```
 //! # #[macro_use]
@@ -66,15 +66,15 @@
 //! assert_eq!(Opt::help_message("mc"), "mc 
 //!
 //! USAGE:
-//!     mc [FLAGS] [OPTIONS] --N <N> --filling-fraction <filling-fraction>
+//!     mc [FLAGS] [OPTIONS] --N <INT> --filling-fraction <FLOAT>
 //!
 //! FLAGS:
 //!         --verbose    Activate verbose printing
 //!
 //! OPTIONS:
-//!         --N <N>                                  Number of atoms
-//!         --dir <dir>                              Output directory, working directory if not present
-//!         --filling-fraction <filling-fraction>    Filling fraction");
+//!         --N <INT>                     Number of atoms
+//!         --dir <dir>                   Output directory, working directory if not present
+//!         --filling-fraction <FLOAT>    Filling fraction");
 //! # }
 //! ```
 
@@ -212,7 +212,7 @@ impl ClapMe for bool {
 }
 
 macro_rules! impl_fromstr {
-    ($t:ty) => {
+    ($t:ty, $tyname:expr) => {
         impl ClapMe for $t {
             fn with_clap<T>(info: ArgInfo, app: clap::App,
                             f: impl FnOnce(clap::App) -> T) -> T {
@@ -221,6 +221,7 @@ macro_rules! impl_fromstr {
                 if info.name == "" {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .requires_all(info.required_flags)
                               .required(info.required)
                               .help(&info.help)
@@ -230,6 +231,7 @@ macro_rules! impl_fromstr {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .requires_all(info.required_flags)
                               .required(info.required)
                               .conflicts_with_all(&conflicts)
@@ -241,6 +243,7 @@ macro_rules! impl_fromstr {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .requires_all(info.required_flags)
                               .required(info.required)
                               .conflicts_with_all(&conflicts)
@@ -261,6 +264,7 @@ macro_rules! impl_fromstr {
                 if info.name == "" {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .required(false)
                               .requires_all(info.required_flags)
                               .multiple(true)
@@ -271,6 +275,7 @@ macro_rules! impl_fromstr {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
+                              .value_name($tyname)
                               .required(false)
                               .requires_all(info.required_flags)
                               .conflicts_with_all(&conflicts)
@@ -291,18 +296,18 @@ macro_rules! impl_fromstr {
     }
 }
 
-impl_fromstr!(isize);
-impl_fromstr!(i16);
-impl_fromstr!(i32);
-impl_fromstr!(i64);
-impl_fromstr!(i128);
-impl_fromstr!(u16);
-impl_fromstr!(u32);
-impl_fromstr!(u64);
-impl_fromstr!(u128);
-impl_fromstr!(usize);
-impl_fromstr!(f32);
-impl_fromstr!(f64);
+impl_fromstr!(isize, "INT");
+impl_fromstr!(i16, "INT");
+impl_fromstr!(i32, "INT");
+impl_fromstr!(i64, "INT");
+impl_fromstr!(i128, "INT");
+impl_fromstr!(u16, "INT");
+impl_fromstr!(u32, "INT");
+impl_fromstr!(u64, "INT");
+impl_fromstr!(u128, "INT");
+impl_fromstr!(usize, "INT");
+impl_fromstr!(f32, "FLOAT");
+impl_fromstr!(f64, "FLOAT");
 
 
 macro_rules! impl_from {
