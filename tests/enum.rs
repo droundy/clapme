@@ -69,12 +69,14 @@ fn unit_enum_with_underscores() {
     #[derive(ClapMe, PartialEq, Debug)]
     enum EnumOpt {
         First_World,
+        /// The second option is awesome!
         Second,
         T_,
     }
     println!("help: {}", EnumOpt::help_message("foo"));
     assert!(EnumOpt::help_message("foo").contains("--First-World "));
     assert!(EnumOpt::help_message("foo").contains("--second "));
+    assert!(EnumOpt::help_message("foo").contains("The second option is awesome!"));
     assert!(EnumOpt::help_message("foo").contains("--T "));
 
     assert_eq!(

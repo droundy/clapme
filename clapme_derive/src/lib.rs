@@ -119,7 +119,7 @@ fn return_with_fields(f: syn::Fields,
     }
 }
 
-fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
+fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenStream {
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
@@ -157,6 +157,7 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
             }
         },
         syn::Fields::Unit => {
+            let doc = mdoc.unwrap();
             quote!{
                 let newinfo = info.clone();
                 let f = |app: clapme::clap::App| {
@@ -167,12 +168,12 @@ fn with_clap_fields(f: syn::Fields) -> proc_macro2::TokenStream {
                                   .requires_all(newinfo.required_flags)
                                   .conflicts_with_all(&conflicts)
                                   .required_unless_one(&ruo)
-                                  .help("FIXME")))
+                                  .help(#doc)))
                     } else {
                         f(app.arg(clapme::clap::Arg::with_name(&name).long(&name)
                                   .requires_all(newinfo.required_flags)
                                   .conflicts_with_all(&conflicts)
-                                  .help("FIXME")))
+                                  .help(#doc)))
                     }
                 };
             }
@@ -205,7 +206,8 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
             let types3 = f.iter().rev().map(|x| x.ty.clone());
             let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
-            let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()));
+            let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()),
+                                                   None);
             let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
                                                    quote!(#name));
             quote!{
@@ -241,7 +243,10 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let vnames6 = vnames.clone();
             // println!("variant names are {:?}", names);
             let fields: Vec<_> = v.iter().map(|x| x.fields.clone()).collect();
-            let with_claps: Vec<_> = v.iter().map(|v| with_clap_fields(v.fields.clone())).collect();
+            let with_claps: Vec<_> = v.iter().map(|v| {
+                let d = get_doc_comment(&v.attrs);
+                with_clap_fields(v.fields.clone(), Some(d))
+            }).collect();
             // println!("variant with_claps are {:?}", with_claps);
             let one_field: Vec<_> = fields.iter().map(|f| one_field_name(f.clone())).collect();
             let one_field2 = one_field.clone();
