@@ -87,7 +87,42 @@ fn unit_enum_with_underscores() {
         EnumOpt::Second,
         EnumOpt::from_iter(&["", "--second"]).unwrap());
 
+    assert_eq!(
+        EnumOpt::T_,
+        EnumOpt::from_iter(&["", "--T"]).unwrap());
+
     assert!(EnumOpt::from_iter(&[""]).is_err());
 
     assert!(EnumOpt::from_iter(&["", "--first", "--second"]).is_err());
+}
+
+#[test]
+fn enum_with_singular_tuple() {
+    #[derive(ClapMe, PartialEq, Debug)]
+    enum EnumOpt {
+        /// The foo integer
+        Foo(u32),
+        /// The bar String
+        Bar(String),
+    }
+    println!("help: {}", EnumOpt::help_message("foo"));
+    assert!(EnumOpt::help_message("foo").contains("--foo <INT>"));
+    assert!(EnumOpt::help_message("foo").contains("--bar <STRING>"));
+    assert!(EnumOpt::help_message("foo").contains("The foo integer"));
+    assert!(EnumOpt::help_message("foo").contains("The bar String"));
+
+    println!("Without too much fun...");
+    println!("Hello world {:?}", EnumOpt::from_iter(&["", "--foo=37"]));
+    println!("This is fun...");
+    assert_eq!(
+        EnumOpt::Foo(37),
+        EnumOpt::from_iter(&["", "--foo=37"]).expect("Trouble right here"));
+
+    assert_eq!(
+        EnumOpt::Bar("hello".to_string()),
+        EnumOpt::from_iter(&["", "--bar=hello"]).unwrap());
+
+    assert!(EnumOpt::from_iter(&[""]).is_err());
+
+    assert!(EnumOpt::from_iter(&["", "--foo=37", "--bar=hello"]).is_err());
 }

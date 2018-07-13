@@ -253,6 +253,7 @@ macro_rules! impl_fromstr {
                 }
             }
             fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                println!("from {} {:?}", name, matches.value_of(name));
                 matches.value_of(name).map(|s| Self::from_str(s).unwrap())
             }
         }

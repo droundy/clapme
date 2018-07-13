@@ -88,8 +88,10 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                 name.to_string()
             }
         },
-        _ => {
-            panic!("ClapMe only supports named fields so far!")
+        syn::Fields::Unnamed(_) => {
+            quote!{
+                name.to_string()
+            }
         },
     }
 }
@@ -112,6 +114,13 @@ fn return_with_fields(f: syn::Fields,
         },
         syn::Fields::Unit => {
             quote!( return Some( #name ); )
+        },
+        syn::Fields::Unnamed(ref unnamed) if unnamed.unnamed.len() == 1 => {
+            let f = unnamed.unnamed.iter().next().unwrap();
+            let mytype = f.ty.clone();
+            quote!{
+                return Some( #name(<#mytype as ClapMe>::from_clap(&name, matches)? ) );
+            }
         },
         _ => {
             panic!("ClapMe only supports named fields so far!")
@@ -178,8 +187,27 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                 };
             }
         },
+        syn::Fields::Unnamed(ref unnamed) if unnamed.unnamed.len() == 1 => {
+            let f = unnamed.unnamed.iter().next().unwrap();
+            let mytype = f.ty.clone();
+            let doc = mdoc.unwrap();
+            quote!{
+                println!("name is {:?} but info.name is {:?}", &name, info.name);
+                let newinfo = clapme::ArgInfo {
+                    name: &name,
+                    help: #doc,
+                    required_flags: &info.required_flags,
+                    required_unless_one: info.required_unless_one.clone(),
+                    conflicted_flags: info.conflicted_flags.clone(),
+                    ..info
+                };
+                let f = |app: clapme::clap::App| {
+                    <#mytype as ClapMe>::with_clap(newinfo, app, f)
+                };
+            }
+        },
         _ => {
-            panic!("ClapMe only supports named fields so far!")
+            panic!("ClapMe only supports named fields, unit, and singular tuple so far!")
         },
     }
 }
@@ -288,8 +316,11 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 info.required_unless_one.push(s.clone());
                             }
                         }).count();
+                        println!("required_unless_one is {:?} for {:?} with {:?} and conflicted {:?}",
+                                 info.required_unless_one, name, info.required, info.conflicted_flags);
 
                         #with_claps
+                        println!("this is so cool");
                     )*
                     f(app)
                 }
@@ -300,6 +331,7 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #(
                         let name = format!("{}-{}", orig_name, #vnames5);
                         let prefix = format!("{}{}-", orig_prefix, #vnames6);
+                        println!("this is good: {:?} and {:?}", &name, &prefix);
                         if matches.is_present(#one_field) {
                             #return_enum
                         }
