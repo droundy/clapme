@@ -19,6 +19,9 @@ extern crate proc_macro2;
 
 use syn::*;
 
+use std::hash::Hash;
+use std::hash::Hasher;
+
 fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
     let mut doc_comments: Vec<_> = attrs
         .iter()
@@ -214,9 +217,9 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
 
 /// Generates the `ClapMe` impl.
 #[proc_macro_derive(ClapMe)]
-pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     use syn::Data::*;
-    let input: DeriveInput = syn::parse(input).unwrap();
+    let input: DeriveInput = syn::parse(raw_input.clone()).unwrap();
 
     let name = &input.ident;
     let generics = &input.generics;
@@ -349,9 +352,18 @@ pub fn clapme(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         <#(#generic_types: clapme::ClapMe),*>
     };
 
+    let mut s = std::collections::hash_map::DefaultHasher::new();
+    raw_input.to_string().hash(&mut s);
+    let h = s.finish();
+    let mod_ident = syn::Ident::new(&format!("clapme_{}", h),
+                                    proc_macro2::Span::call_site());
     let tokens2: proc_macro2::TokenStream = quote!{
-        impl#bounds ClapMe for #name#generics {
-            #myimpl
+        mod #mod_ident {
+            use ::clapme::ClapMe;
+            use ::clapme;
+            impl#bounds ClapMe for #name#generics {
+                #myimpl
+            }
         }
     };
     // println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
