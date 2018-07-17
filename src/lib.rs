@@ -91,6 +91,8 @@ pub use clapme_derive::*;
 use std::str::FromStr;
 use std::ffi::OsString;
 
+pub mod guide;
+
 /// Re-export of clap
 pub mod clap {
     pub use _clap::*;
