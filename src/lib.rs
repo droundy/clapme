@@ -10,74 +10,7 @@
 
 //! This crate defines the `ClapMe` trait and its custom derrive.
 //!
-//! ## How to `derive(ClapMe)`
-//!
-//! To begin with, let's look at an example of how you might actually
-//! use `ClapMe` in a real program.
-//!
-//! ```should_panic
-//! #[macro_use]
-//! extern crate clapme;
-//!
-//! use std::path::PathBuf;
-//! use clapme::ClapMe;
-//!
-//! #[derive(Debug, ClapMe)]
-//! struct Opt {
-//!     /// Filling fraction
-//!     filling_fraction: f64,
-//!     /// Number of atoms
-//!     N: u32,
-//!     /// Output directory, working directory if not present
-//!     dir: Option<PathBuf>,
-//!     /// Activate verbose printing
-//!     verbose: bool,
-//! }
-//!
-//! fn main() {
-//!     let opt = Opt::from_args();
-//!     println!("{:?}", opt);
-//! }
-//! ```
-//!
-//! The above example shows you how to use clapme, but it doesn't show
-//! you what the options will look like to a user.  So instead, this
-//! documentation will give examples in the following way:
-//!
-//! ```
-//! # #[macro_use]
-//! # extern crate clapme;
-//! # 
-//! # use std::path::PathBuf;
-//! # use clapme::ClapMe;
-//! # 
-//! #[derive(Debug, ClapMe)]
-//! struct Opt {
-//!     /// Filling fraction
-//!     filling_fraction: f64,
-//!     /// Number of atoms
-//!     N: u32,
-//!     /// Output directory, working directory if not present
-//!     dir: Option<PathBuf>,
-//!     /// Activate verbose printing
-//!     verbose: bool,
-//! }
-//! # fn main() {
-//! assert_eq!(Opt::help_message("mc"), "mc 
-//!
-//! USAGE:
-//!     mc [FLAGS] [OPTIONS] --N <INT> --filling-fraction <FLOAT>
-//!
-//! FLAGS:
-//!         --verbose    Activate verbose printing
-//!
-//! OPTIONS:
-//!         --N <INT>                     Number of atoms
-//!         --dir <PATH>                  Output directory, working directory if not present
-//!         --filling-fraction <FLOAT>    Filling fraction");
-//! # }
-//! ```
-
+//! To learn to use clapme, you should read [the clapme guide](guide/index.html).
 
 extern crate clap as _clap;
 
