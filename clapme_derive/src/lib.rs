@@ -19,9 +19,6 @@ extern crate proc_macro2;
 
 use syn::*;
 
-use std::hash::Hash;
-use std::hash::Hasher;
-
 fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
     let mut doc_comments: Vec<_> = attrs
         .iter()
@@ -77,7 +74,7 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                     let mut flagname: Option<String> = None;
                     #(
                         let thisname = format!("{}{}", prefix, #names);
-                        let reqs = <#types as ClapMe>::requires_flags(&thisname);
+                        let reqs = <#types as ::clapme::ClapMe>::requires_flags(&thisname);
                         if let Some(x) = reqs.first() {
                             flagname = Some(x.clone());
                         }
@@ -110,8 +107,8 @@ fn return_with_fields(f: syn::Fields,
             quote! {
                 return Some( #name {
                     #( #idents:
-                        <#types as ClapMe>::from_clap(&format!("{}{}", &prefix, #names),
-                                                      matches)?,  )*
+                        <#types as ::clapme::ClapMe>::from_clap(&format!("{}{}", &prefix, #names),
+                                                                matches)?,  )*
                 });
             }
         },
@@ -122,7 +119,7 @@ fn return_with_fields(f: syn::Fields,
             let f = unnamed.unnamed.iter().next().unwrap();
             let mytype = f.ty.clone();
             quote!{
-                return Some( #name(<#mytype as ClapMe>::from_clap(&name, matches)? ) );
+                return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&name, matches)? ) );
             }
         },
         _ => {
@@ -146,7 +143,7 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                 if !info.required {
                     // only add dependencies on flags required by this
                     // set of fields, but not absolutely required.
-                    #(flags.extend(<#types1 as ClapMe>::requires_flags(&format!("{}{}", &prefix, #names1)));)*;
+                    #(flags.extend(<#types1 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &prefix, #names1)));)*;
                 }
                 let mut new_req: Vec<&str> = flags.iter().map(AsRef::as_ref).collect();
                 new_req.extend(info.required_flags);
@@ -154,7 +151,7 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                 #( let argname: String = format!("{}{}", &prefix, #names);
                    let my_req: Vec<&str>
                    = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
-                   let newinfo = clapme::ArgInfo {
+                   let newinfo = ::clapme::ArgInfo {
                        name: &argname,
                        help: #docs,
                        required_flags: &my_req,
@@ -162,8 +159,8 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                        conflicted_flags: info.conflicted_flags.clone(),
                        ..info
                    };
-                   let f = |app: clapme::clap::App| {
-                       <#types as ClapMe>::with_clap(newinfo, app, f)
+                   let f = |app: ::clapme::clap::App| {
+                       <#types as ::clapme::ClapMe>::with_clap(newinfo, app, f)
                    };
                 )*
             }
@@ -172,17 +169,17 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             let doc = mdoc.unwrap();
             quote!{
                 let newinfo = info.clone();
-                let f = |app: clapme::clap::App| {
+                let f = |app: ::clapme::clap::App| {
                     let conflicts: Vec<_> = newinfo.conflicted_flags.iter().map(AsRef::as_ref).collect();
                     let ruo: Vec<_> = newinfo.required_unless_one.iter().map(AsRef::as_ref).collect();
                     if ruo.len() > 0 {
-                        f(app.arg(clapme::clap::Arg::with_name(&name).long(&name)
+                        f(app.arg(::clapme::clap::Arg::with_name(&name).long(&name)
                                   .requires_all(newinfo.required_flags)
                                   .conflicts_with_all(&conflicts)
                                   .required_unless_one(&ruo)
                                   .help(#doc)))
                     } else {
-                        f(app.arg(clapme::clap::Arg::with_name(&name).long(&name)
+                        f(app.arg(::clapme::clap::Arg::with_name(&name).long(&name)
                                   .requires_all(newinfo.required_flags)
                                   .conflicts_with_all(&conflicts)
                                   .help(#doc)))
@@ -196,7 +193,7 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             let doc = mdoc.unwrap();
             quote!{
                 println!("name is {:?} but info.name is {:?}", &name, info.name);
-                let newinfo = clapme::ArgInfo {
+                let newinfo = ::clapme::ArgInfo {
                     name: &name,
                     help: #doc,
                     required_flags: &info.required_flags,
@@ -204,8 +201,8 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                     conflicted_flags: info.conflicted_flags.clone(),
                     ..info
                 };
-                let f = |app: clapme::clap::App| {
-                    <#mytype as ClapMe>::with_clap(newinfo, app, f)
+                let f = |app: ::clapme::clap::App| {
+                    <#mytype as ::clapme::ClapMe>::with_clap(newinfo, app, f)
                 };
             }
         },
@@ -242,9 +239,9 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
                                                    quote!(#name));
             quote!{
-                fn with_clap<ClapMeT>(mut info: clapme::ArgInfo,
-                                app: clapme::clap::App,
-                                f: impl FnOnce(clapme::clap::App) -> ClapMeT)
+                fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
+                                app: ::clapme::clap::App,
+                                f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
                                 -> ClapMeT {
                     info.multiple = false;
                     let name = info.name;
@@ -252,14 +249,14 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #with_clap_stuff
                     f(app)
                 }
-                fn from_clap<'a,'b>(name: &str, matches: &clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
                     #return_struct
                 }
                 fn requires_flags(name: &str) -> Vec<String> {
                     #find_prefix
                     let mut flags: Vec<String> = Vec::new();
-                    #(flags.extend(<#types3 as ClapMe>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
+                    #(flags.extend(<#types3 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
                     flags
                 }
             }
@@ -287,9 +284,9 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 return_with_fields(v.fields.clone(), quote!(#name::#variant_name))
             });
             let s = quote! {
-                fn with_clap<ClapMeT>(mut info: clapme::ArgInfo,
-                                app: clapme::clap::App,
-                                f: impl FnOnce(clapme::clap::App) -> ClapMeT)
+                fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
+                                app: ::clapme::clap::App,
+                                f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
                                 -> ClapMeT {
                     let name = info.name;
                     #find_prefix
@@ -327,7 +324,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     )*
                     f(app)
                 }
-                fn from_clap<'a,'b>(name: &str, matches: &clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
                     let orig_prefix = prefix;
                     let orig_name = name;
@@ -349,21 +346,12 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let generic_types = input.generics.type_params();
     let bounds = quote!{
-        <#(#generic_types: clapme::ClapMe),*>
+        <#(#generic_types: ::clapme::ClapMe),*>
     };
 
-    let mut s = std::collections::hash_map::DefaultHasher::new();
-    raw_input.to_string().hash(&mut s);
-    let h = s.finish();
-    let mod_ident = syn::Ident::new(&format!("clapme_{}", h),
-                                    proc_macro2::Span::call_site());
     let tokens2: proc_macro2::TokenStream = quote!{
-        mod #mod_ident {
-            use ::clapme::ClapMe;
-            use ::clapme;
-            impl#bounds ClapMe for #name#generics {
-                #myimpl
-            }
+        impl#bounds ::clapme::ClapMe for #name#generics {
+            #myimpl
         }
     };
     // println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
