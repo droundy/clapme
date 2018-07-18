@@ -235,6 +235,15 @@ fn guide() {
     /// This may be a good idea if `MyConfig` and `YourConfig` are
     /// implementation details that your user need not be aware of.
 
+    /// ## Other possibilities
+
+    /// There may be a few other features that clapme has, for which I
+    /// have not bothered to create an entire example.  I will list
+    /// them here when they come to mind.
+
+    /// 1. You can use a `Vec<T>` for many values of `T` to create an
+    ///    option that can be specified more than once.
+
     /// ## Conclusion
 
     /// There is more that could be said and more possible examples,
