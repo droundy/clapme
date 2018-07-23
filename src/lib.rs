@@ -260,6 +260,8 @@ macro_rules! impl_from {
                             f: impl FnOnce(clap::App) -> T) -> T {
                 let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
                 let ruo: Vec<_> = info.required_unless_one.iter().map(AsRef::as_ref).collect();
+                // println!("\n\nmy name is {:?}", info.name);
+                // println!("   requires_all {:?}", info.required_flags);
                 if info.name == "" {
                     f(app.arg(clap::Arg::with_name(info.name)
                               .takes_value(true)
@@ -268,6 +270,7 @@ macro_rules! impl_from {
                               .required(info.required)
                               .help(&info.help)))
                 } else if ruo.len() > 0 {
+                    // println!("   conflicts_with_all {:?}", &conflicts);
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
@@ -278,6 +281,7 @@ macro_rules! impl_from {
                               .required_unless_one(&ruo)
                               .help(&info.help)))
                 } else {
+                    // println!("   conflicts_with_all {:?}", &conflicts);
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)

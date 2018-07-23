@@ -192,7 +192,7 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             let mytype = f.ty.clone();
             let doc = mdoc.unwrap();
             quote!{
-                println!("name is {:?} but info.name is {:?}", &name, info.name);
+                // println!("name is {:?} but info.name is {:?}", &name, info.name);
                 let newinfo = ::clapme::ArgInfo {
                     name: &name,
                     help: #doc,
@@ -233,7 +233,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
             let types3 = f.iter().rev().map(|x| x.ty.clone());
-            let names3 = f.iter().rev().map(|x| x.ident.clone().unwrap().to_string());
+            let names3 = f.iter().rev().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()),
                                                    None);
             let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
@@ -316,11 +316,10 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 info.required_unless_one.push(s.clone());
                             }
                         }).count();
-                        println!("required_unless_one is {:?} for {:?} with {:?} and conflicted {:?}",
-                                 info.required_unless_one, name, info.required, info.conflicted_flags);
+                        // println!("required_unless_one is {:?} for {:?} with {:?} and conflicted {:?}",
+                        //          info.required_unless_one, name, info.required, info.conflicted_flags);
 
                         #with_claps
-                        println!("this is so cool");
                     )*
                     f(app)
                 }
@@ -331,7 +330,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #(
                         let name = format!("{}-{}", orig_name, #vnames5);
                         let prefix = format!("{}{}-", orig_prefix, #vnames6);
-                        println!("this is good: {:?} and {:?}", &name, &prefix);
+                        // println!("this is good: {:?} and {:?}", &name, &prefix);
                         if matches.is_present(#one_field) {
                             #return_enum
                         }
