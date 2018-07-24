@@ -188,7 +188,7 @@ macro_rules! impl_fromstr {
                 }
             }
             fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
-                println!("from {} {:?}", name, matches.value_of(name));
+                // println!("from {} {:?}", name, matches.value_of(name));
                 matches.value_of(name).map(|s| Self::from_str(s).unwrap())
             }
         }
@@ -271,6 +271,7 @@ macro_rules! impl_from {
                               .help(&info.help)))
                 } else if ruo.len() > 0 {
                     // println!("   conflicts_with_all {:?}", &conflicts);
+                    // println!("   required_unless_one {:?}", &ruo);
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)

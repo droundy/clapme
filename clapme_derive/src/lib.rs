@@ -73,7 +73,7 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                 {
                     let mut flagname: Option<String> = None;
                     #(
-                        let thisname = format!("{}{}", prefix, #names);
+                        let thisname = format!("{}{}", _prefix, #names);
                         let reqs = <#types as ::clapme::ClapMe>::requires_flags(&thisname);
                         if let Some(x) = reqs.first() {
                             flagname = Some(x.clone());
@@ -85,12 +85,12 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
         },
         syn::Fields::Unit => {
             quote!{
-                name.to_string()
+                _name.to_string()
             }
         },
         syn::Fields::Unnamed(_) => {
             quote!{
-                name.to_string()
+                _name.to_string()
             }
         },
     }
@@ -107,7 +107,7 @@ fn return_with_fields(f: syn::Fields,
             quote! {
                 return Some( #name {
                     #( #idents:
-                        <#types as ::clapme::ClapMe>::from_clap(&format!("{}{}", &prefix, #names),
+                        <#types as ::clapme::ClapMe>::from_clap(&format!("{}{}", &_prefix, #names),
                                                                 matches)?,  )*
                 });
             }
@@ -119,7 +119,7 @@ fn return_with_fields(f: syn::Fields,
             let f = unnamed.unnamed.iter().next().unwrap();
             let mytype = f.ty.clone();
             quote!{
-                return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&name, matches)? ) );
+                return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&_name, matches)? ) );
             }
         },
         _ => {
@@ -143,12 +143,13 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                 if !info.required {
                     // only add dependencies on flags required by this
                     // set of fields, but not absolutely required.
-                    #(flags.extend(<#types1 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &prefix, #names1)));)*;
+                    #(flags.extend(<#types1 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &_prefix, #names1)));)*
+                    // println!("   my flags are {:?}", flags);
                 }
                 let mut new_req: Vec<&str> = flags.iter().map(AsRef::as_ref).collect();
                 new_req.extend(info.required_flags);
 
-                #( let argname: String = format!("{}{}", &prefix, #names);
+                #( let argname: String = format!("{}{}", &_prefix, #names);
                    let my_req: Vec<&str>
                    = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
                    let newinfo = ::clapme::ArgInfo {
@@ -173,13 +174,13 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                     let conflicts: Vec<_> = newinfo.conflicted_flags.iter().map(AsRef::as_ref).collect();
                     let ruo: Vec<_> = newinfo.required_unless_one.iter().map(AsRef::as_ref).collect();
                     if ruo.len() > 0 {
-                        f(app.arg(::clapme::clap::Arg::with_name(&name).long(&name)
+                        f(app.arg(::clapme::clap::Arg::with_name(&_name).long(&_name)
                                   .requires_all(newinfo.required_flags)
                                   .conflicts_with_all(&conflicts)
                                   .required_unless_one(&ruo)
                                   .help(#doc)))
                     } else {
-                        f(app.arg(::clapme::clap::Arg::with_name(&name).long(&name)
+                        f(app.arg(::clapme::clap::Arg::with_name(&_name).long(&_name)
                                   .requires_all(newinfo.required_flags)
                                   .conflicts_with_all(&conflicts)
                                   .help(#doc)))
@@ -192,9 +193,9 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             let mytype = f.ty.clone();
             let doc = mdoc.unwrap();
             quote!{
-                // println!("name is {:?} but info.name is {:?}", &name, info.name);
+                // println!("name is {:?} but info.name is {:?}", &_name, info.name);
                 let newinfo = ::clapme::ArgInfo {
-                    name: &name,
+                    name: &_name,
                     help: #doc,
                     required_flags: &info.required_flags,
                     required_unless_one: info.required_unless_one.clone(),
@@ -221,9 +222,9 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let name = &input.ident;
     let generics = &input.generics;
     let find_prefix = quote!{
-        let prefix: String = match name.chars().next() {
+        let _prefix: String = match _name.chars().next() {
             None | Some('_') | Some('-') => "".to_string(),
-            _ => format!("{}-", name),
+            _ => format!("{}-", _name),
         };
     };
     let myimpl = match input.data {
@@ -244,19 +245,19 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
                                 -> ClapMeT {
                     info.multiple = false;
-                    let name = info.name;
+                    let _name = info.name;
                     #find_prefix
                     #with_clap_stuff
                     f(app)
                 }
-                fn from_clap<'a,'b>(name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
                     #return_struct
                 }
-                fn requires_flags(name: &str) -> Vec<String> {
+                fn requires_flags(_name: &str) -> Vec<String> {
                     #find_prefix
                     let mut flags: Vec<String> = Vec::new();
-                    #(flags.extend(<#types3 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &prefix, #names3)));)*;
+                    #(flags.extend(<#types3 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &_prefix, #names3)));)*;
                     flags
                 }
             }
@@ -288,15 +289,15 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 app: ::clapme::clap::App,
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
                                 -> ClapMeT {
-                    let name = info.name;
+                    let _name = info.name;
                     #find_prefix
-                    let orig_prefix = prefix.clone();
+                    let orig_prefix = _prefix.clone();
                     info.multiple = false;
 
                     let mut conflicts: Vec<String> = Vec::new();
                     #(
-                        let name = format!("{}-{}", info.name, #vnames3);
-                        let prefix = format!("{}{}-", orig_prefix, #vnames4);
+                        let _name = format!("{}-{}", info.name, #vnames3);
+                        let _prefix = format!("{}{}-", orig_prefix, #vnames4);
                         conflicts.push(#one_field2);
                     )*
 
@@ -305,8 +306,8 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let am_required = info.required || original_required_unless.len() > 0;
                     info.required = false;
                     #(
-                        let name = format!("{}-{}", info.name, #vnames);
-                        let prefix = format!("{}{}-", orig_prefix, #vnames2);
+                        let _name = format!("{}-{}", info.name, #vnames);
+                        let _prefix = format!("{}{}-", orig_prefix, #vnames2);
                         let myself = #one_field3;
                         info.required_unless_one = original_required_unless.clone();
                         info.conflicted_flags = original_conflicted.clone();
@@ -317,25 +318,34 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                             }
                         }).count();
                         // println!("required_unless_one is {:?} for {:?} with {:?} and conflicted {:?}",
-                        //          info.required_unless_one, name, info.required, info.conflicted_flags);
+                        //          info.required_unless_one, _name, info.required, info.conflicted_flags);
 
                         #with_claps
                     )*
                     f(app)
                 }
-                fn from_clap<'a,'b>(name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
-                    let orig_prefix = prefix;
-                    let orig_name = name;
+                    let orig_prefix = _prefix;
+                    let orig_name = _name;
                     #(
-                        let name = format!("{}-{}", orig_name, #vnames5);
-                        let prefix = format!("{}{}-", orig_prefix, #vnames6);
-                        // println!("this is good: {:?} and {:?}", &name, &prefix);
+                        let _name = format!("{}-{}", orig_name, #vnames5);
+                        let _prefix = format!("{}{}-", orig_prefix, #vnames6);
+                        // println!("this is good: {:?} and {:?}", &name, &_prefix);
                         if matches.is_present(#one_field) {
                             #return_enum
                         }
                     )*
                     panic!("Some version of the enum should be present!")
+                }
+                fn requires_flags(_name: &str) -> Vec<String> {
+                    // This is a little hokey, but we just list an
+                    // enum as having no required flags.  That is an
+                    // understatement, but I don't know how to use
+                    // clap to specify a set of flags as a
+                    // requirement.  One would hope an ArgGroup would
+                    // achieve this, but I don't think it does.
+                    Vec::new()
                 }
             };
             s
