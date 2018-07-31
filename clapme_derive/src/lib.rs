@@ -193,7 +193,6 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             let mytype = f.ty.clone();
             let doc = mdoc.unwrap();
             quote!{
-                // println!("name is {:?} but info.name is {:?}", &_name, info.name);
                 let newinfo = ::clapme::ArgInfo {
                     name: &_name,
                     help: #doc,
@@ -296,7 +295,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
                     let mut conflicts: Vec<String> = Vec::new();
                     #(
-                        let _name = format!("{}-{}", info.name, #vnames3);
+                        let _name = format!("{}{}", orig_prefix, #vnames3);
                         let _prefix = format!("{}{}-", orig_prefix, #vnames4);
                         conflicts.push(#one_field2);
                     )*
@@ -306,7 +305,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let am_required = info.required || original_required_unless.len() > 0;
                     info.required = false;
                     #(
-                        let _name = format!("{}-{}", info.name, #vnames);
+                        let _name = format!("{}{}", orig_prefix, #vnames);
                         let _prefix = format!("{}{}-", orig_prefix, #vnames2);
                         let myself = #one_field3;
                         info.required_unless_one = original_required_unless.clone();
@@ -327,9 +326,8 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     #find_prefix
                     let orig_prefix = _prefix;
-                    let orig_name = _name;
                     #(
-                        let _name = format!("{}-{}", orig_name, #vnames5);
+                        let _name = format!("{}{}", orig_prefix, #vnames5);
                         let _prefix = format!("{}{}-", orig_prefix, #vnames6);
                         // println!("this is good: {:?} and {:?}", &name, &_prefix);
                         if matches.is_present(#one_field) {

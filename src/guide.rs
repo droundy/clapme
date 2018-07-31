@@ -176,15 +176,15 @@
 //! exclusive 
 //! 
 //! USAGE:
-//!     exclusive [FLAGS] --Third --second-flag <STRING> --first-a <STRING> --first-b <STRING>
+//!     exclusive [FLAGS] --Third --first-a <STRING> --first-b <STRING> --second-flag <STRING>
 //! 
 //! FLAGS:
 //!         --Third    
 //! 
 //! OPTIONS:
-//!         --second-flag <STRING>    
 //!         --first-a <STRING>        
 //!         --first-b <STRING>        
+//!         --second-flag <STRING>    
 //! ```
 //! This example illustrates the three kinds of `enum` variants.
 //! Sadly, the help message does not indicate that these flags are

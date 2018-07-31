@@ -270,8 +270,8 @@ macro_rules! impl_from {
                               .required(info.required)
                               .help(&info.help)))
                 } else if ruo.len() > 0 {
-                    // println!("   conflicts_with_all {:?}", &conflicts);
-                    // println!("   required_unless_one {:?}", &ruo);
+                    // println!("   {} conflicts_with_all {:?}", info.name, &conflicts);
+                    // println!("   {} required_unless_one {:?}", info.name, &ruo);
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
@@ -282,7 +282,7 @@ macro_rules! impl_from {
                               .required_unless_one(&ruo)
                               .help(&info.help)))
                 } else {
-                    // println!("   conflicts_with_all {:?}", &conflicts);
+                    // println!("   {} conflicts_with_all {:?}", info.name, &conflicts);
                     f(app.arg(clap::Arg::with_name(info.name)
                               .long(info.name)
                               .takes_value(true)
@@ -413,6 +413,7 @@ impl<T: ClapMe> ClapMe for Option<T> {
     fn with_clap<TT>(mut info: ArgInfo, app: clap::App,
                      f: impl FnOnce(clap::App) -> TT) -> TT {
         info.required = false;
+        info.required_unless_one = Vec::new();
         T::with_clap(info, app, f)
     }
     fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
