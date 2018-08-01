@@ -290,6 +290,12 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         Enum(ref e) => {
             let v: Vec<_> = e.variants.iter().collect();
             let vnames: Vec<_> = e.variants.iter().map(|v| camel_case_to_kebab(&v.ident.to_string())).collect();
+            let only_one_variant = vnames.len() == 1;
+            // If only_one_variant is true, this is a special case,
+            // and the code below won't work, because required_unless
+            // logic fails when the list of "unless" fields is empty.
+            // Really, we should treat this thing as a struct with an
+            // additional layer of prefixing going on.
             let vnames2 = vnames.clone();
             let vnames3 = vnames.clone();
             let vnames4 = vnames.clone();
@@ -332,7 +338,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let original_conflicted = info.conflicted_flags.clone();
                     let original_required_unless = info.required_unless_one.clone();
                     let am_required = info.required || original_required_unless.len() > 0;
-                    info.required = false;
+                    info.required = #only_one_variant && am_required;
                     #(
                         let _name = join_prefix(&orig_prefix, #vnames);
                         let _prefix = find_prefix(&join_prefix(&orig_prefix, #vnames2));
