@@ -62,8 +62,8 @@ fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
     }
 }
 
-
 fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
+    let join_prefix = create_join_prefix();
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
@@ -72,8 +72,9 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
             quote! {
                 {
                     let mut flagname: Option<String> = None;
+                    let join_prefix = #join_prefix;
                     #(
-                        let thisname = format!("{}{}", _prefix, #names);
+                        let thisname = join_prefix(&_prefix, #names);
                         let reqs = <#types as ::clapme::ClapMe>::requires_flags(&thisname);
                         if let Some(x) = reqs.first() {
                             flagname = Some(x.clone());
@@ -98,6 +99,7 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
 
 fn return_with_fields(f: syn::Fields,
                       name: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    let join_prefix = create_join_prefix();
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
@@ -105,9 +107,10 @@ fn return_with_fields(f: syn::Fields,
             let types = f.iter().map(|x| x.ty.clone());
             let idents = f.iter().map(|x| x.ident.clone().unwrap());
             quote! {
+                let join_prefix = #join_prefix;
                 return Some( #name {
                     #( #idents:
-                        <#types as ::clapme::ClapMe>::from_clap(&format!("{}{}", &_prefix, #names),
+                        <#types as ::clapme::ClapMe>::from_clap(&join_prefix(&_prefix, #names),
                                                                 matches)?,  )*
                 });
             }
@@ -138,18 +141,20 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             let types1 = f.iter().rev().map(|x| x.ty.clone());
 
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
+            let join_prefix = create_join_prefix();
             quote!{
+                let join_prefix = #join_prefix;
                 let mut flags: Vec<String> = Vec::new();
                 if !info.required {
                     // only add dependencies on flags required by this
                     // set of fields, but not absolutely required.
-                    #(flags.extend(<#types1 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &_prefix, #names1)));)*
+                    #(flags.extend(<#types1 as ::clapme::ClapMe>::requires_flags(&join_prefix(&_prefix, #names1)));)*
                     // println!("   my flags are {:?}", flags);
                 }
                 let mut new_req: Vec<&str> = flags.iter().map(AsRef::as_ref).collect();
                 new_req.extend(info.required_flags);
 
-                #( let argname: String = format!("{}{}", &_prefix, #names);
+                #( let argname = join_prefix(&_prefix, #names);
                    let my_req: Vec<&str>
                    = new_req.iter().map(|&s| s).filter(|s| *s != argname).collect();
                    let newinfo = ::clapme::ArgInfo {
@@ -212,6 +217,30 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
     }
 }
 
+fn create_join_prefix() -> proc_macro2::TokenStream {
+    quote!{
+        |prefix: &str, name: &str| -> String {
+            if name.len() == 0 {
+                let mut x = prefix.to_string();
+                x.pop();
+                x
+            } else {
+                format!("{}{}", prefix, name)
+            }
+        }
+    }
+}
+fn create_find_prefix() -> proc_macro2::TokenStream {
+    quote!{
+        |name: &str| -> String {
+            match name.chars().next() {
+                None | Some('_') | Some('-') => "".to_string(),
+                _ => format!("{}-", name),
+            }
+        }
+    }
+}
+
 /// Generates the `ClapMe` impl.
 #[proc_macro_derive(ClapMe)]
 pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -220,12 +249,8 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let name = &input.ident;
     let generics = &input.generics;
-    let find_prefix = quote!{
-        let _prefix: String = match _name.chars().next() {
-            None | Some('_') | Some('-') => "".to_string(),
-            _ => format!("{}-", _name),
-        };
-    };
+    let find_prefix = create_find_prefix();
+    let join_prefix = create_join_prefix();
     let myimpl = match input.data {
         Struct(DataStruct {
             fields: syn::Fields::Named(ref fields),
@@ -245,18 +270,19 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 -> ClapMeT {
                     info.multiple = false;
                     let _name = info.name;
-                    #find_prefix
+                    let _prefix = #find_prefix(_name);
                     #with_clap_stuff
                     f(app)
                 }
                 fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
-                    #find_prefix
+                    let _prefix = #find_prefix(_name);
                     #return_struct
                 }
                 fn requires_flags(_name: &str) -> Vec<String> {
-                    #find_prefix
+                    let _prefix = #find_prefix(_name);
                     let mut flags: Vec<String> = Vec::new();
-                    #(flags.extend(<#types3 as ::clapme::ClapMe>::requires_flags(&format!("{}{}", &_prefix, #names3)));)*;
+                    let join_prefix = #join_prefix;
+                    #(flags.extend(<#types3 as ::clapme::ClapMe>::requires_flags(&join_prefix(&_prefix, #names3)));)*;
                     flags
                 }
             }
@@ -283,20 +309,23 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let variant_name = v.ident.clone();
                 return_with_fields(v.fields.clone(), quote!(#name::#variant_name))
             });
+            let find_prefix = create_find_prefix();
             let s = quote! {
                 fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
                                 app: ::clapme::clap::App,
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
                                 -> ClapMeT {
                     let _name = info.name;
-                    #find_prefix
+                    let find_prefix = #find_prefix;
+                    let _prefix = find_prefix(_name);
                     let orig_prefix = _prefix.clone();
+                    let join_prefix = #join_prefix;
                     info.multiple = false;
 
                     let mut conflicts: Vec<String> = Vec::new();
                     #(
-                        let _name = format!("{}{}", orig_prefix, #vnames3);
-                        let _prefix = format!("{}{}-", orig_prefix, #vnames4);
+                        let _name = join_prefix(&orig_prefix, #vnames3);
+                        let _prefix = find_prefix(&join_prefix(&orig_prefix, #vnames4));
                         conflicts.push(#one_field2);
                     )*
 
@@ -305,8 +334,8 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let am_required = info.required || original_required_unless.len() > 0;
                     info.required = false;
                     #(
-                        let _name = format!("{}{}", orig_prefix, #vnames);
-                        let _prefix = format!("{}{}-", orig_prefix, #vnames2);
+                        let _name = join_prefix(&orig_prefix, #vnames);
+                        let _prefix = find_prefix(&join_prefix(&orig_prefix, #vnames2));
                         let myself = #one_field3;
                         info.required_unless_one = original_required_unless.clone();
                         info.conflicted_flags = original_conflicted.clone();
@@ -324,11 +353,13 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     f(app)
                 }
                 fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
-                    #find_prefix
+                    let find_prefix = #find_prefix;
+                    let _prefix = find_prefix(_name);
                     let orig_prefix = _prefix;
+                    let _join_prefix = #join_prefix;
                     #(
-                        let _name = format!("{}{}", orig_prefix, #vnames5);
-                        let _prefix = format!("{}{}-", orig_prefix, #vnames6);
+                        let _name = _join_prefix(&orig_prefix, #vnames5);
+                        let _prefix = find_prefix(&_join_prefix(&orig_prefix, #vnames6));
                         // println!("this is good: {:?} and {:?}", &name, &_prefix);
                         if matches.is_present(#one_field) {
                             #return_enum
@@ -361,12 +392,14 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             #myimpl
         }
     };
-    // println!("\n\nXXXX\n\nXXXX\n\n{}", tokens2);
+    // println!("\n\n{}", tokens2);
     tokens2.into()
 }
 
 fn camel_case_to_kebab(name: &str) -> String {
-    if name.contains('_') {
+    if name.chars().next() == Some('_') {
+        "".to_string()
+    } else if name.contains('_') {
         let mut out = name.to_string().replace("_", "-");
         if out.chars().last() == Some('-') {
             out.pop();
@@ -387,5 +420,9 @@ fn camel_case_to_kebab(name: &str) -> String {
 }
 
 fn snake_case_to_kebab(name: &str) -> String {
-    name.to_string().replace("_", "-")
+    if name.chars().next() == Some('_') {
+        "".to_string()
+    } else {
+        name.to_string().replace("_", "-")
+    }
 }

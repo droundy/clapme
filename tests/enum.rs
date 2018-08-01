@@ -126,3 +126,59 @@ fn enum_with_singular_tuple() {
 
     assert!(EnumOpt::from_iter(&["", "--foo=37", "--bar=hello"]).is_err());
 }
+
+#[test]
+fn enum_with_underscore_variant() {
+    #[derive(ClapMe, PartialEq, Debug)]
+    enum EnumOpt {
+        _Greet {
+            hello: String,
+        },
+        Goodbye(String),
+    }
+    println!("help: {}", EnumOpt::help_message("foo"));
+    assert!(EnumOpt::help_message("foo").contains("--hello "));
+    assert!(EnumOpt::help_message("foo").contains("--goodbye "));
+
+    assert_eq!(
+        EnumOpt::_Greet { hello: "David".to_string() },
+        EnumOpt::from_iter(&["", "--hello", "David"]).unwrap());
+
+    assert_eq!(
+        EnumOpt::Goodbye("David".to_string()),
+        EnumOpt::from_iter(&["", "--goodbye=David"]).unwrap());
+
+    assert!(EnumOpt::from_iter(&[""]).is_err());
+
+    assert!(EnumOpt::from_iter(&["", "--hello=David", "--goodbye=Goliath"]).is_err());
+}
+
+#[test]
+fn enum_with_nested_underscore_variant() {
+    #[derive(ClapMe, PartialEq, Debug)]
+    enum EnumOpt {
+        _Greet {
+            hello: String,
+        },
+        Goodbye(String),
+    }
+    #[derive(ClapMe, PartialEq, Debug)]
+    struct Opt {
+        say: EnumOpt,
+    }
+    println!("help: {}", Opt::help_message("foo"));
+    assert!(Opt::help_message("foo").contains("--say-hello "));
+    assert!(Opt::help_message("foo").contains("--say-goodbye "));
+
+    assert_eq!(
+        Opt { say: EnumOpt::_Greet { hello: "David".to_string() } },
+        Opt::from_iter(&["", "--say-hello", "David"]).unwrap());
+
+    assert_eq!(
+        Opt { say: EnumOpt::Goodbye("David".to_string()) },
+        Opt::from_iter(&["", "--say-goodbye=David"]).unwrap());
+
+    assert!(EnumOpt::from_iter(&[""]).is_err());
+
+    assert!(EnumOpt::from_iter(&["", "--say-hello=David", "--say-goodbye=Goliath"]).is_err());
+}
