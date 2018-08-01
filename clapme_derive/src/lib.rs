@@ -119,7 +119,7 @@ fn return_with_fields(f: syn::Fields,
             quote!( return Some( #name ); )
         },
         syn::Fields::Unnamed(ref unnamed) if unnamed.unnamed.len() == 1 => {
-            let f = unnamed.unnamed.iter().next().unwrap();
+            let f = unnamed.unnamed.iter().next().expect("we should have one field");
             let mytype = f.ty.clone();
             quote!{
                 return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&_name, matches)? ) );
@@ -172,7 +172,7 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
             }
         },
         syn::Fields::Unit => {
-            let doc = mdoc.unwrap();
+            let doc = mdoc.unwrap_or("".to_string());
             quote!{
                 let newinfo = info.clone();
                 let f = |app: ::clapme::clap::App| {
@@ -196,7 +196,7 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
         syn::Fields::Unnamed(ref unnamed) if unnamed.unnamed.len() == 1 => {
             let f = unnamed.unnamed.iter().next().unwrap();
             let mytype = f.ty.clone();
-            let doc = mdoc.unwrap();
+            let doc = mdoc.unwrap_or("".to_string());
             quote!{
                 let newinfo = ::clapme::ArgInfo {
                     name: &_name,
@@ -284,6 +284,59 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let join_prefix = #join_prefix;
                     #(flags.extend(<#types3 as ::clapme::ClapMe>::requires_flags(&join_prefix(&_prefix, #names3)));)*;
                     flags
+                }
+            }
+        },
+        Struct(DataStruct {
+            fields: syn::Fields::Unit,
+            ..
+        }) => {
+            let with_clap_stuff = with_clap_fields(syn::Fields::Unit, None);
+            let return_struct = return_with_fields(syn::Fields::Unit, quote!(#name));
+            quote!{
+                fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
+                                app: ::clapme::clap::App,
+                                f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
+                                      -> ClapMeT {
+                    let _name = info.name;
+                    #with_clap_stuff
+                    f(app)
+                }
+                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                    #return_struct
+                }
+                fn requires_flags(_name: &str) -> Vec<String> {
+                    Vec::new()
+                }
+            }
+        },
+        Struct(DataStruct {
+            fields: syn::Fields::Unnamed(ref unnamed),
+            ..
+        }) => {
+            if unnamed.unnamed.len() != 1 {
+                panic!("ClapMe does not handle tuple structs with more than one field");
+            }
+            let with_clap_stuff = with_clap_fields(syn::Fields::Unnamed(unnamed.clone()),
+                                                   None);
+            let return_struct = return_with_fields(syn::Fields::Unnamed(unnamed.clone()),
+                                                   quote!(#name));
+            let f = unnamed.unnamed.iter().next().expect("There should be a field here!");
+            let mytype = f.ty.clone();
+            quote!{
+                fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
+                                app: ::clapme::clap::App,
+                                f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
+                                      -> ClapMeT {
+                    let _name = info.name;
+                    #with_clap_stuff
+                    f(app)
+                }
+                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                    #return_struct
+                }
+                fn requires_flags(_name: &str) -> Vec<String> {
+                    <#mytype as ::clapme::ClapMe>::requires_flags(_name)
                 }
             }
         },
@@ -385,7 +438,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             };
             s
         },
-        _ => panic!("ClapMe only supports non-tuple structs and enums"),
+        _ => panic!("ClapMe only supports non-tuple structs"),
     };
 
     let generic_types = input.generics.type_params();

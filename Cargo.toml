@@ -1,6 +1,6 @@
 [package]
 name = "clapme"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["David Roundy <roundyd@physics.oregonstate.edu>"]
 description = "Parse command line arguments by defining a struct."
 repository = "https://github.com/droundy/clapme"
@@ -16,6 +16,6 @@ travis-ci = { repository = "droundy/clapme" }
 
 [dependencies]
 clap = "2.32"
-clapme_derive = { path = "clapme_derive", version = "0.1.7" }
+clapme_derive = { path = "clapme_derive", version = "0.1.8" }
 
 [workspace]
