@@ -291,19 +291,15 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             fields: syn::Fields::Unit,
             ..
         }) => {
-            let with_clap_stuff = with_clap_fields(syn::Fields::Unit, None);
-            let return_struct = return_with_fields(syn::Fields::Unit, quote!(#name));
             quote!{
-                fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
+                fn with_clap<ClapMeT>(mut _info: ::clapme::ArgInfo,
                                 app: ::clapme::clap::App,
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
                                       -> ClapMeT {
-                    let _name = info.name;
-                    #with_clap_stuff
                     f(app)
                 }
                 fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
-                    #return_struct
+                    Some( #name )
                 }
                 fn requires_flags(_name: &str) -> Vec<String> {
                     Vec::new()
