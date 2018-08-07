@@ -89,10 +89,17 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                 _name.to_string()
             }
         },
-        syn::Fields::Unnamed(_) => {
-            quote!{
-                _name.to_string()
-            }
+        syn::Fields::Unnamed(ref unnamed) => {
+            let f = unnamed.unnamed.iter().next().expect("we should have one field");
+            let mytype = f.ty.clone();
+            quote!{{
+                let reqs = <#mytype as ::clapme::ClapMe>::requires_flags(&_name);
+                if let Some(x) = reqs.first() {
+                    x.clone()
+                } else {
+                    panic!("enum {:?} must have one required field!", _name)
+                }
+            }}
         },
     }
 }
