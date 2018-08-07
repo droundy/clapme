@@ -20,13 +20,12 @@ struct SubOpt {
 #[derive(Debug, ClapMe, PartialEq, Eq)]
 struct Opt {
     foo: String,
-    bar: String,
     _report: SubOpt,
 }
 
 #[derive(Debug, ClapMe, PartialEq, Eq)]
 enum Parent {
-    CaseOne(String),
+    CaseOne,
     _CaseTwo(Opt),
 }
 
@@ -36,10 +35,9 @@ fn craziness() {
     assert!(Parent::help_message("foo").contains("--quiet "));
     assert_eq!(Parent::_CaseTwo(Opt {
         foo: "foo".to_string(),
-        bar: "bar".to_string(),
         _report: SubOpt {
             max_iter: None,
             quiet: false,
         }
-    }), Parent::from_iter(&["", "--bar=bar", "--foo=foo"]).unwrap());
+    }), Parent::from_iter(&["", "--foo=foo"]).unwrap());
 }
