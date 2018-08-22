@@ -8,7 +8,7 @@
 
 #![deny(missing_docs)]
 
-//! This crate defines the `ClapMe` trait and its custom derrive.
+//! This crate defines the `ClapMe` trait and its custom derive.
 //!
 //! To learn to use clapme, you should read [the clapme guide](guide/index.html).
 
