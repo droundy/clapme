@@ -138,6 +138,12 @@
 //!         --directory <PATH>    
 //!         --name <STRING>       
 //! ```
+//! I should note that integer types do allow their value to be
+//! specified using scientific notation, as in `1e6` rather than
+//! `1000000`.  This is in different from rust's `FromStr`
+//! implementation.  ClapMe does reject floating point values that
+//! cannot be reversibly converted to the integer type that is
+//! requested.
 //! ## Optional flags
 //! In the previous examples, every flag (except a `bool` flag)
 //! was required to be specified by the user.  If you want a flag

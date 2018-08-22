@@ -133,6 +133,12 @@ fn guide() {
     strings.push(Types::help_message("types"));
     // INSERT STRING
 
+    /// I should note that integer types do allow their value to be
+    /// specified using scientific notation, as in `1e6` rather than
+    /// `1000000`.  This is in different from rust's `FromStr`
+    /// implementation.  ClapMe does reject floating point values that
+    /// cannot be reversibly converted to the integer type that is
+    /// requested.
 
     /// ## Optional flags
 
