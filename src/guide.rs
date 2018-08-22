@@ -20,19 +20,19 @@
 //! 
 //! #[derive(Debug, ClapMe)]
 //! struct Opt {
-//! /// Filling fraction
-//! filling_fraction: f64,
-//! /// Number of atoms
-//! N: u32,
-//! /// Output directory, working directory if not present
-//! dir: Option<PathBuf>,
-//! /// Activate verbose printing
-//! verbose: bool,
+//!     /// Filling fraction
+//!     filling_fraction: f64,
+//!     /// Number of atoms
+//!     N: u32,
+//!     /// Output directory, working directory if not present
+//!     dir: Option<PathBuf>,
+//!     /// Activate verbose printing
+//!     verbose: bool,
 //! }
 //! 
 //! fn main() {
-//! let opt = Opt::from_args();
-//! println!("{:?}", opt);
+//!     let opt = Opt::from_args();
+//!     println!("{:?}", opt);
 //! }
 //! ```
 //! The remainder of this guide will give examples of how the
