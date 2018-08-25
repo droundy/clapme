@@ -17,6 +17,6 @@ travis-ci = { repository = "droundy/clapme" }
 [dependencies]
 clap = "2.32"
 clapme_derive = { path = "clapme_derive", version = "0.1.10" }
-rustyard = "0.6.0"
+meval = "0.1.0"
 
 [workspace]

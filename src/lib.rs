@@ -13,7 +13,7 @@
 //! To learn to use clapme, you should read [the clapme guide](guide/index.html).
 
 extern crate clap as _clap;
-extern crate rustyard;
+extern crate meval;
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -225,11 +225,7 @@ macro_rules! impl_fromstr {
 }
 
 fn str_to_f64(s: &str) -> Result<f64, String> {
-    if let Ok(x) = f64::from_str(s) {
-        return Ok(x);
-    }
-    let mut parser = rustyard::ShuntingYard::new();
-    parser.calculate(s).map_err(|e| e.join("\n"))
+    meval::eval_str(s).map_err(|e| e.to_string())
 }
 
 macro_rules! impl_rustyard {

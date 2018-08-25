@@ -79,9 +79,12 @@ fn simple_f64_many_ways() {
     assert_eq!(3.0_f64.sqrt(),
                <f64>::from_iter(&["","sqrt(3)"]).unwrap());
 
+    assert_eq!(3.0_f64.sqrt(),
+               <f64>::from_iter(&["","3^(1/2)"]).unwrap());
+
     assert_eq!(1e300,
                <f64>::from_iter(&["","1e300"]).unwrap());
 
-    // assert_eq!(1e300_f64.sqrt(),
-    //            <f64>::from_iter(&["","sqrt(1e300)"]).unwrap());
+    assert_eq!(1e300_f64.sqrt(),
+               <f64>::from_iter(&["","sqrt(1e300)"]).unwrap());
 }
