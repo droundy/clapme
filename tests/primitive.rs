@@ -18,6 +18,11 @@ fn simple_u64() {
     assert_eq!(7,
                u64::from_iter(&["","7"]).unwrap());
 
+    assert_eq!(7,
+               u64::from_iter(&["","7e0"]).unwrap());
+    assert_eq!(1000000,
+               u64::from_iter(&["","1e6"]).unwrap());
+
     assert!(u64::from_iter(&[""]).is_err());
 
     assert!(u64::from_iter(&["hello"]).is_err());

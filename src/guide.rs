@@ -138,11 +138,18 @@
 //!         --directory <PATH>    
 //!         --name <STRING>       
 //! ```
-//! I will note here that when parsing user input, a specified
-//! temperature of `1/3` will correctly give a value of one third,
-//! and `sqrt(2)` will give root 2.  Allowing simple arithmetic as
-//! floating point input makes it easier to give high-precision
-//! input when needed.
+//! I should note that integer types do allow their value to be
+//! specified using scientific notation, as in `1e6` rather than
+//! `1000000`.  This is in different from rust's `FromStr`
+//! implementation.  ClapMe does reject floating point values that
+//! cannot be reversibly converted to the integer type that is
+//! requested.
+//! 
+//! Furthermore, when providing numerical user input, users may
+//! specify an expression such as `1/3` or `sqrt(2)`.  This is
+//! most useful for floating point input where makes it easier to
+//! give high-precision input when needed, but may also be helpful
+//! for integers.
 //! ## Optional flags
 //! In the previous examples, every flag (except a `bool` flag)
 //! was required to be specified by the user.  If you want a flag

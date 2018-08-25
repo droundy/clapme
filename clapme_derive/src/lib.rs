@@ -89,10 +89,17 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                 _name.to_string()
             }
         },
-        syn::Fields::Unnamed(_) => {
-            quote!{
-                _name.to_string()
-            }
+        syn::Fields::Unnamed(ref unnamed) => {
+            let f = unnamed.unnamed.iter().next().expect("we should have one field");
+            let mytype = f.ty.clone();
+            quote!{{
+                let reqs = <#mytype as ::clapme::ClapMe>::requires_flags(&_name);
+                if let Some(x) = reqs.first() {
+                    x.clone()
+                } else {
+                    panic!("enum {:?} must have one required field!", _name)
+                }
+            }}
         },
     }
 }
@@ -111,7 +118,7 @@ fn return_with_fields(f: syn::Fields,
                 return Some( #name {
                     #( #idents:
                         <#types as ::clapme::ClapMe>::from_clap(&join_prefix(&_prefix, #names),
-                                                                matches)?,  )*
+                                                                _matches)?,  )*
                 });
             }
         },
@@ -122,7 +129,7 @@ fn return_with_fields(f: syn::Fields,
             let f = unnamed.unnamed.iter().next().expect("we should have one field");
             let mytype = f.ty.clone();
             quote!{
-                return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&_name, matches)? ) );
+                return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&_name, _matches)? ) );
             }
         },
         _ => {
@@ -274,10 +281,11 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #with_clap_stuff
                     f(app)
                 }
-                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(_name: &str, _matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     let _prefix = #find_prefix(_name);
                     #return_struct
                 }
+                #[allow(unused_mut)]
                 fn requires_flags(_name: &str) -> Vec<String> {
                     let _prefix = #find_prefix(_name);
                     let mut flags: Vec<String> = Vec::new();
@@ -298,7 +306,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                       -> ClapMeT {
                     f(app)
                 }
-                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(_name: &str, _matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     Some( #name )
                 }
                 fn requires_flags(_name: &str) -> Vec<String> {
@@ -328,7 +336,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     #with_clap_stuff
                     f(app)
                 }
-                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(_name: &str, _matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     #return_struct
                 }
                 fn requires_flags(_name: &str) -> Vec<String> {
@@ -407,7 +415,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     )*
                     f(app)
                 }
-                fn from_clap<'a,'b>(_name: &str, matches: &::clapme::clap::ArgMatches) -> Option<Self> {
+                fn from_clap<'a,'b>(_name: &str, _matches: &::clapme::clap::ArgMatches) -> Option<Self> {
                     let find_prefix = #find_prefix;
                     let _prefix = find_prefix(_name);
                     let orig_prefix = _prefix;
@@ -416,7 +424,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         let _name = _join_prefix(&orig_prefix, #vnames5);
                         let _prefix = find_prefix(&_join_prefix(&orig_prefix, #vnames6));
                         // println!("this is good: {:?} and {:?}", &name, &_prefix);
-                        if matches.is_present(#one_field) {
+                        if _matches.is_present(#one_field) {
                             #return_enum
                         }
                     )*
