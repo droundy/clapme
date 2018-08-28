@@ -286,14 +286,9 @@ fn guide() {
 
     strings.reverse();
 
-    println!("current dir is {:?}", std::env::current_dir());
-    println!("hello world");
     let src = std::path::Path::new("tests/create-guide.rs");
-    println!("hello world");
     let dest = std::path::Path::new("src/guide.rs");
-    println!("creating {:?}", &dest);
     let mut f = std::fs::File::create(&dest).unwrap();
-    println!("opening {:?}", &src);
     let i = std::fs::File::open(&src).unwrap();
     let lines = std::io::BufReader::new(&i);
     let mut am_writing = false;
