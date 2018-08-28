@@ -13,6 +13,7 @@
 //! To learn to use clapme, you should read [the clapme guide](guide/index.html).
 
 extern crate clap as _clap;
+extern crate meval;
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -223,8 +224,92 @@ macro_rules! impl_fromstr {
     }
 }
 
-impl_fromstr!(f32, "FLOAT");
-impl_fromstr!(f64, "FLOAT");
+fn str_to_f64(s: &str) -> Result<f64, String> {
+    meval::eval_str(s).map_err(|e| e.to_string())
+}
+
+macro_rules! impl_rustyard {
+    ($t:ty, $tyname:expr) => {
+        impl ClapMe for $t {
+            fn with_clap<T>(info: ArgInfo, app: clap::App,
+                            f: impl FnOnce(clap::App) -> T) -> T {
+                let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
+                let ruo: Vec<_> = info.required_unless_one.iter().map(AsRef::as_ref).collect();
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .help(&info.help)
+                              .validator(|s| str_to_f64(&s).map(|_| ()))))
+                } else if ruo.len() > 0 {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .conflicts_with_all(&conflicts)
+                              .required_unless_one(&ruo)
+                              .help(&info.help)
+                              .validator(|s| str_to_f64(&s).map(|_| ()))))
+                } else {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .requires_all(info.required_flags)
+                              .required(info.required)
+                              .conflicts_with_all(&conflicts)
+                              .help(&info.help)
+                              .validator(|s| str_to_f64(&s).map(|_| ()))))
+                }
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                // println!("from {} {:?}", name, matches.value_of(name));
+                matches.value_of(name).map(|s| str_to_f64(s).unwrap() as Self)
+            }
+        }
+
+        impl ClapMe for Vec<$t> {
+            fn with_clap<TT>(info: ArgInfo, app: clap::App,
+                             f: impl FnOnce(clap::App) -> TT) -> TT {
+                let conflicts: Vec<_> = info.conflicted_flags.iter().map(AsRef::as_ref).collect();
+                if info.name == "" {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .multiple(true)
+                              .help(&info.help)
+                              .validator(|s| str_to_f64(&s).map(|_| ()))))
+                } else {
+                    f(app.arg(clap::Arg::with_name(info.name)
+                              .long(info.name)
+                              .takes_value(true)
+                              .value_name($tyname)
+                              .required(false)
+                              .requires_all(info.required_flags)
+                              .conflicts_with_all(&conflicts)
+                              .multiple(true)
+                              .help(&info.help)
+                              .validator(|s| str_to_f64(&s).map(|_| ()))))
+                }
+            }
+            fn from_clap(name: &str, matches: &clap::ArgMatches) -> Option<Self> {
+                Some(matches.values_of(name).unwrap_or(clap::Values::default())
+                     .map(|s| str_to_f64(s).unwrap() as $t).collect())
+            }
+            fn requires_flags(_name: &str) -> Vec<String> {
+                vec![]
+            }
+        }
+    }
+}
+impl_rustyard!(f32, "FLOAT");
+impl_rustyard!(f64, "FLOAT");
 
 impl_fromstr!(std::net::IpAddr, "ADDR");
 impl_fromstr!(std::net::Ipv4Addr, "ADDR");
@@ -242,7 +327,7 @@ macro_rules! impl_fromstr_or_via_f64 {
                 let ruo: Vec<_> = info.required_unless_one.iter().map(AsRef::as_ref).collect();
                 let validator = |s: String| {
                     if let Err(e) = Self::from_str(&s) {
-                        if let Ok(x) = f64::from_str(&s) {
+                        if let Ok(x) = str_to_f64(&s) {
                             if (x as $t) as f64 == x {
                                 return Ok(());
                             }
@@ -288,7 +373,7 @@ macro_rules! impl_fromstr_or_via_f64 {
                     if let Ok(v) = Self::from_str(s) {
                         return v;
                     }
-                    f64::from_str(s).unwrap() as Self
+                    str_to_f64(s).unwrap() as Self
                 })
             }
         }

@@ -62,3 +62,29 @@ fn simple_option_vec_i16() {
     assert_eq!(Vec::<i16>::new(),
                <Vec<i16>>::from_iter(&[""]).unwrap());
 }
+
+#[test]
+fn simple_f64_many_ways() {
+    println!("help: {}", <f64>::help_message("vec"));
+
+    assert_eq!(0.3,
+               <f64>::from_iter(&["","0.3"]).unwrap());
+
+    assert_eq!(7.0,
+               <f64>::from_iter(&["","7"]).unwrap());
+
+    assert_eq!(1.0/3.0,
+               <f64>::from_iter(&["","1/3"]).unwrap());
+
+    assert_eq!(3.0_f64.sqrt(),
+               <f64>::from_iter(&["","sqrt(3)"]).unwrap());
+
+    assert_eq!(3.0_f64.sqrt(),
+               <f64>::from_iter(&["","3^(1/2)"]).unwrap());
+
+    assert_eq!(1e300,
+               <f64>::from_iter(&["","1e300"]).unwrap());
+
+    assert_eq!(1e300_f64.sqrt(),
+               <f64>::from_iter(&["","sqrt(1e300)"]).unwrap());
+}

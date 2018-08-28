@@ -145,6 +145,12 @@ fn guide() {
     /// implementation.  ClapMe does reject floating point values that
     /// cannot be reversibly converted to the integer type that is
     /// requested.
+    ///
+    /// Furthermore, when providing numerical user input, users may
+    /// specify an expression such as `1/3` or `sqrt(2)`.  This is
+    /// most useful for floating point input where makes it easier to
+    /// give high-precision input when needed, but may also be helpful
+    /// for integers.
 
     /// ## Optional flags
 
