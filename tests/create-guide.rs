@@ -73,27 +73,6 @@ fn guide() {
     // INSERT STRING
     /// A single boolean flag is treated as an optional flag.
 
-    /// ## How the flag is determined
-
-    /// We saw above that the flag just had `--` prepended to the
-    /// field name.  The rule in general is only slightly more
-    /// complicated: every underscore is replaced with a `-`.
-    #[derive(ClapMe)]
-    #[allow(non_snake_case)]
-    // START CODE
-    struct Flags {
-        verbose: bool,
-        blue_is_nice: bool,
-        min_T: bool,
-    }
-    // STOP CODE
-    /// This gives the following usage.
-    strings.push(Flags::help_message("flags"));
-    // INSERT STRING
-    /// Thus you can create most any flag name you care for, and it is
-    /// easy to tell which flag corresponds to which field in your
-    /// struct.
-
     /// ## Adding help information
 
     /// We add help information simply by adding ordinary doc comments
@@ -104,16 +83,40 @@ fn guide() {
     struct Help {
         /// Print excess messages.
         verbose: bool,
-        /// The lowest temperature.
-        min_T: bool,
+        /// The temperature.
+        T: bool,
     }
     // STOP CODE
     /// This gives the following usage.
     strings.push(Help::help_message("help"));
     // INSERT STRING
-    /// In most of this documentation I'll avoid adding help text,
-    /// just to keep the page short, but I would always add it for
-    /// actual projects!
+    /// I would always documentation for actual projects, so I'll try
+    /// to model that here, even though these examples are all
+    /// fictitious.
+
+    /// ## How the flag is determined
+
+    /// We saw above that the flag just had `--` prepended to the
+    /// field name.  The rule in general is only slightly more
+    /// complicated: every underscore is replaced with a `-`.
+    #[derive(ClapMe)]
+    #[allow(non_snake_case)]
+    // START CODE
+    struct Flags {
+        /// a simple word has "--" prepended to it.
+        verbose: bool,
+        /// Underscores are replaced with "-" ...
+        blue_is_nice_: bool,
+        /// and capital letters are preserved.
+        min_T: bool,
+    }
+    // STOP CODE
+    /// This gives the following usage.
+    strings.push(Flags::help_message("flags"));
+    // INSERT STRING
+    /// Thus you can create most any flag name you care for, and it is
+    /// easy to tell which flag corresponds to which field in your
+    /// struct.
 
     /// ## Other types
 
@@ -124,8 +127,11 @@ fn guide() {
     #[allow(non_snake_case)]
     // START CODE
     struct Types {
+        /// The name of the type
         name: String,
+        /// The temperature of the type
         T: f64,
+        /// The place where it is
         directory: std::path::PathBuf,
     }
     // STOP CODE
@@ -148,6 +154,7 @@ fn guide() {
     #[derive(ClapMe)]
     // START CODE
     struct Optional {
+        /// The name is an optional argument.
         name: Option<String>,
     }
     // STOP CODE
@@ -163,11 +170,19 @@ fn guide() {
     #[derive(ClapMe)]
     // START CODE
     enum Exclusive {
+        /// In this context, the doc comment for the variant is not
+        /// used by clapme.
         First {
+            /// This is the "a" value
             a: String,
+            /// This is the "b" value, which you cannot specify unless
+            /// you also specify the "a" value.
+            /// Only one line of comment shows up in the help.
             b: String,
         },
+        /// A string that cannot be used with any other flag
         SecondFlag(String),
+        /// A flag with no value, and with a capital letter.
         Third_,
     }
     // STOP CODE
@@ -196,11 +211,19 @@ fn guide() {
     /// field names.
     // IGNORE CODE
     #[derive(ClapMe)]
+    /// I'm not putting doc-comments on `x` and `y`, because clapme
+    /// would give the same help message for `--position-x` as for
+    /// `--velocity-x`, which would be pretty useless.
     struct Vec2d {
         x: f64, y: f64,
     }
     #[derive(ClapMe)]
     struct Nested {
+        /// We would like for this to be the help for both components
+        /// of the position, but clapme is not that clever.  Ideally
+        /// the help should read something like: the x component of
+        /// the position/velocity, but that would require combining
+        /// information at multiple levels and sounds hard.
         position: Vec2d,
         velocity: Vec2d,
     }
@@ -223,10 +246,12 @@ fn guide() {
     // IGNORE CODE
     #[derive(ClapMe)]
     struct MyConfig {
+        /// The user's name
         name: String,
     }
     #[derive(ClapMe)]
     struct YourConfig {
+        /// The user's address
         address: String,
     }
     #[derive(ClapMe)]
