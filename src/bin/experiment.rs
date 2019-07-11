@@ -1,6 +1,6 @@
+#[macro_use]
 extern crate clapme;
 
-#[macro_use]
 use clapme::ClapMe;
 
 #[derive(ClapMe, PartialEq, Debug)]
