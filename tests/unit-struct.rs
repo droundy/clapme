@@ -6,7 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[macro_use]
 extern crate clapme;
 
 use clapme::ClapMe;
@@ -19,8 +18,7 @@ fn unit_struct() {
     println!("help: {}", Unit::help_message("foo"));
     assert!(!Unit::help_message("foo").contains("--first"));
 
-    assert_eq!(Unit,
-               Unit::from_iter(&[""]).unwrap());
+    assert_eq!(Unit, Unit::from_iter(&[""]).unwrap());
 }
 
 #[test]
@@ -34,11 +32,15 @@ fn struct_with_unit() {
     assert!(Opt::help_message("foo").contains("--first"));
     assert!(!Opt::help_message("foo").contains("--second"));
 
-    assert_eq!(Opt{ first: 7, second: Unit },
-               Opt::from_iter(&["","--first=7"]).unwrap());
+    assert_eq!(
+        Opt {
+            first: 7,
+            second: Unit
+        },
+        Opt::from_iter(&["", "--first=7"]).unwrap()
+    );
 
-    assert_eq!(None,
-               Opt::from_iter(&["","--first=7", "--second"]).ok());
+    assert_eq!(None, Opt::from_iter(&["", "--first=7", "--second"]).ok());
 
     assert!(Opt::from_iter(&[""]).is_err());
 

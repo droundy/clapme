@@ -6,7 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[macro_use]
 extern crate clapme;
 
 use clapme::ClapMe;
@@ -14,9 +13,7 @@ use clapme::ClapMe;
 #[derive(Debug, ClapMe)]
 enum Params {
     ResumeFrom(String),
-    _Params {
-        sys: SquareWellParams,
-    },
+    _Params { sys: SquareWellParams },
 }
 
 #[derive(Debug, ClapMe)]
@@ -32,7 +29,6 @@ struct SquareWellParams {
     well_width: String,
     cell: Dimensions,
 }
-
 
 #[test]
 fn craziness() {

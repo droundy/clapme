@@ -1,13 +1,10 @@
-#[macro_use]
 extern crate clapme;
 
 use clapme::ClapMe;
 
 #[derive(ClapMe, PartialEq, Debug)]
 enum Exclusive {
-    First {
-        a: String,
-    },
+    First { a: String },
 }
 
 #[test]

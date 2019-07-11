@@ -236,7 +236,8 @@
 //! /// would give the same help message for `--position-x` as for
 //! /// `--velocity-x`, which would be pretty useless.
 //! struct Vec2d {
-//!     x: f64, y: f64,
+//!     x: f64,
+//!     y: f64,
 //! }
 //! #[derive(ClapMe)]
 //! struct Nested {

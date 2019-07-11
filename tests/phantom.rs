@@ -6,7 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[macro_use]
 extern crate clapme;
 
 use clapme::ClapMe;
@@ -23,8 +22,12 @@ fn simple_phantom() {
     assert!(<PhantomOpt<i32>>::help_message("foo").contains("--second"));
 
     assert_eq!(
-        PhantomOpt::<i32> { first: std::marker::PhantomData, second: "hello".to_string() },
-        <PhantomOpt<i32>>::from_iter(&["","--second=hello"]).unwrap());
+        PhantomOpt::<i32> {
+            first: std::marker::PhantomData,
+            second: "hello".to_string()
+        },
+        <PhantomOpt<i32>>::from_iter(&["", "--second=hello"]).unwrap()
+    );
 
     assert!(<PhantomOpt<i32>>::from_iter(&[""]).is_err());
 }
