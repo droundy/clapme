@@ -64,14 +64,42 @@
 //!         --foo    
 //! ```
 //! A single boolean flag is treated as an optional flag.
+//! ## Adding help information
+//! We add help information simply by adding ordinary doc comments
+//! to our struct.
+//! ```
+//! struct Help {
+//!     /// Print excess messages.
+//!     verbose: bool,
+//!     /// The temperature.
+//!     T: bool,
+//! }
+//! ```
+//! This gives the following usage.
+//! ```ignore
+//! help 
+//! 
+//! USAGE:
+//!     help [FLAGS]
+//! 
+//! FLAGS:
+//!         --T          The temperature.
+//!         --verbose    Print excess messages.
+//! ```
+//! I would always documentation for actual projects, so I'll try
+//! to model that here, even though these examples are all
+//! fictitious.
 //! ## How the flag is determined
 //! We saw above that the flag just had `--` prepended to the
 //! field name.  The rule in general is only slightly more
 //! complicated: every underscore is replaced with a `-`.
 //! ```
 //! struct Flags {
+//!     /// a simple word has "--" prepended to it.
 //!     verbose: bool,
-//!     blue_is_nice: bool,
+//!     /// Underscores are replaced with "-" ...
+//!     blue_is_nice_: bool,
+//!     /// and capital letters are preserved.
 //!     min_T: bool,
 //! }
 //! ```
@@ -83,46 +111,24 @@
 //!     flags [FLAGS]
 //! 
 //! FLAGS:
-//!         --blue-is-nice    
-//!         --min-T           
-//!         --verbose         
+//!         --blue-is-nice-    Underscores are replaced with "-" ...
+//!         --min-T            and capital letters are preserved.
+//!         --verbose          a simple word has "--" prepended to it.
 //! ```
 //! Thus you can create most any flag name you care for, and it is
 //! easy to tell which flag corresponds to which field in your
 //! struct.
-//! ## Adding help information
-//! We add help information simply by adding ordinary doc comments
-//! to our struct.
-//! ```
-//! struct Help {
-//!     /// Print excess messages.
-//!     verbose: bool,
-//!     /// The lowest temperature.
-//!     min_T: bool,
-//! }
-//! ```
-//! This gives the following usage.
-//! ```ignore
-//! help 
-//! 
-//! USAGE:
-//!     help [FLAGS]
-//! 
-//! FLAGS:
-//!         --min-T      The lowest temperature.
-//!         --verbose    Print excess messages.
-//! ```
-//! In most of this documentation I'll avoid adding help text,
-//! just to keep the page short, but I would always add it for
-//! actual projects!
 //! ## Other types
 //! You can add most standard library types to your struct,
 //! basically anything that can be read or parsed from a `&str`.
 //! I'd recommend sticking to owned types.
 //! ```
 //! struct Types {
+//!     /// The name of the type
 //!     name: String,
+//!     /// The temperature of the type
 //!     T: f64,
+//!     /// The place where it is
 //!     directory: std::path::PathBuf,
 //! }
 //! ```
@@ -134,9 +140,9 @@
 //!     types --T <FLOAT> --directory <PATH> --name <STRING>
 //! 
 //! OPTIONS:
-//!         --T <FLOAT>           
-//!         --directory <PATH>    
-//!         --name <STRING>       
+//!         --T <FLOAT>           The temperature of the type
+//!         --directory <PATH>    The place where it is
+//!         --name <STRING>       The name of the type
 //! ```
 //! I should note that integer types do allow their value to be
 //! specified using scientific notation, as in `1e6` rather than
@@ -156,6 +162,7 @@
 //! to be optional, you just use the standard `Option` type.
 //! ```
 //! struct Optional {
+//!     /// The name is an optional argument.
 //!     name: Option<String>,
 //! }
 //! ```
@@ -167,7 +174,7 @@
 //!     optional [OPTIONS]
 //! 
 //! OPTIONS:
-//!         --name <STRING>    
+//!         --name <STRING>    The name is an optional argument.
 //! ```
 //! The value is then `None` if the user did not specify that flag.
 //! ## Exclusive flags
@@ -175,11 +182,19 @@
 //! you use an `enum` (just as always, in rust).
 //! ```
 //! enum Exclusive {
+//!     /// In this context, the doc comment for the variant is not
+//!     /// used by clapme.
 //!     First {
+//!         /// This is the "a" value
 //!         a: String,
+//!         /// This is the "b" value, which you cannot specify unless
+//!         /// you also specify the "a" value.
+//!         /// Only one line of comment shows up in the help.
 //!         b: String,
 //!     },
+//!     /// A string that cannot be used with any other flag
 //!     SecondFlag(String),
+//!     /// A flag with no value, and with a capital letter.
 //!     Third_,
 //! }
 //! ```
@@ -191,12 +206,12 @@
 //!     exclusive [FLAGS] --Third --first-a <STRING> --first-b <STRING> --second-flag <STRING>
 //! 
 //! FLAGS:
-//!         --Third    
+//!         --Third    A flag with no value, and with a capital letter.
 //! 
 //! OPTIONS:
-//!         --first-a <STRING>        
-//!         --first-b <STRING>        
-//!         --second-flag <STRING>    
+//!         --first-a <STRING>        This is the "a" value
+//!         --first-b <STRING>        Only one line of comment shows up in the help.
+//!         --second-flag <STRING>    A string that cannot be used with any other flag
 //! ```
 //! This example illustrates the three kinds of `enum` variants.
 //! Sadly, the help message does not indicate that these flags are
@@ -217,11 +232,19 @@
 //! field names.
 //! ```ignore
 //! #[derive(ClapMe)]
+//! /// I'm not putting doc-comments on `x` and `y`, because clapme
+//! /// would give the same help message for `--position-x` as for
+//! /// `--velocity-x`, which would be pretty useless.
 //! struct Vec2d {
 //!     x: f64, y: f64,
 //! }
 //! #[derive(ClapMe)]
 //! struct Nested {
+//!     /// We would like for this to be the help for both components
+//!     /// of the position, but clapme is not that clever.  Ideally
+//!     /// the help should read something like: the x component of
+//!     /// the position/velocity, but that would require combining
+//!     /// information at multiple levels and sounds hard.
 //!     position: Vec2d,
 //!     velocity: Vec2d,
 //! }
@@ -251,10 +274,12 @@
 //! ```ignore
 //! #[derive(ClapMe)]
 //! struct MyConfig {
+//!     /// The user's name
 //!     name: String,
 //! }
 //! #[derive(ClapMe)]
 //! struct YourConfig {
+//!     /// The user's address
 //!     address: String,
 //! }
 //! #[derive(ClapMe)]
@@ -271,8 +296,8 @@
 //!     flattened --address <STRING> --name <STRING>
 //! 
 //! OPTIONS:
-//!         --address <STRING>    
-//!         --name <STRING>       
+//!         --address <STRING>    The user's address
+//!         --name <STRING>       The user's name
 //! ```
 //! This may be a good idea if `MyConfig` and `YourConfig` are
 //! implementation details that your user need not be aware of.
