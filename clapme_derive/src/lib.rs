@@ -39,11 +39,11 @@ fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
                 }
                 let value = s.value();
                 let text = value
-                    .trim_left_matches("//!")
-                    .trim_left_matches("///")
-                    .trim_left_matches("/*!")
-                    .trim_left_matches("/**")
-                    .trim_right_matches("*/")
+                    .trim_start_matches("//!")
+                    .trim_start_matches("///")
+                    .trim_start_matches("/*!")
+                    .trim_start_matches("/**")
+                    .trim_end_matches("*/")
                     .trim();
                 if text.is_empty() {
                     Some("\n\n".to_string())
