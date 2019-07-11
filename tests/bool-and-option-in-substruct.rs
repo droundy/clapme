@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[macro_use]
 extern crate clapme;
 
 use clapme::ClapMe;
@@ -32,14 +33,11 @@ enum Parent {
 fn craziness() {
     println!("help: {}", Parent::help_message("foo"));
     assert!(Parent::help_message("foo").contains("--quiet "));
-    assert_eq!(
-        Parent::_CaseTwo(Opt {
-            foo: "foo".to_string(),
-            _report: SubOpt {
-                max_iter: None,
-                quiet: false,
-            }
-        }),
-        Parent::from_iter(&["", "--foo=foo"]).unwrap()
-    );
+    assert_eq!(Parent::_CaseTwo(Opt {
+        foo: "foo".to_string(),
+        _report: SubOpt {
+            max_iter: None,
+            quiet: false,
+        }
+    }), Parent::from_iter(&["", "--foo=foo"]).unwrap());
 }

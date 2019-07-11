@@ -9,7 +9,7 @@
 //! This crate is custom derive for ClapMe. It should not be used
 //! directly.
 
-#![recursion_limit = "256"]
+#![recursion_limit="256"]
 
 extern crate proc_macro;
 extern crate syn;
@@ -33,10 +33,7 @@ fn get_doc_comment(attrs: &[syn::Attribute]) -> String {
         .filter_map(|attr| {
             use Lit::*;
             use Meta::*;
-            if let NameValue(MetaNameValue {
-                ident, lit: Str(s), ..
-            }) = attr
-            {
+            if let NameValue(MetaNameValue {ident, lit: Str(s), ..}) = attr {
                 if ident != "doc" {
                     return None;
                 }
@@ -70,9 +67,7 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f
-                .iter()
-                .map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
+            let names = f.iter().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let types = f.iter().map(|x| x.ty.clone());
             quote! {
                 {
@@ -88,20 +83,16 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                     flagname.expect("enum must have one required field!")
                 }
             }
-        }
+        },
         syn::Fields::Unit => {
-            quote! {
+            quote!{
                 _name.to_string()
             }
-        }
+        },
         syn::Fields::Unnamed(ref unnamed) => {
-            let f = unnamed
-                .unnamed
-                .iter()
-                .next()
-                .expect("we should have one field");
+            let f = unnamed.unnamed.iter().next().expect("we should have one field");
             let mytype = f.ty.clone();
-            quote! {{
+            quote!{{
                 let reqs = <#mytype as ::clapme::ClapMe>::requires_flags(&_name);
                 if let Some(x) = reqs.first() {
                     x.clone()
@@ -109,18 +100,17 @@ fn one_field_name(f: syn::Fields) -> proc_macro2::TokenStream {
                     panic!("enum {:?} must have one required field!", _name)
                 }
             }}
-        }
+        },
     }
 }
 
-fn return_with_fields(f: syn::Fields, name: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn return_with_fields(f: syn::Fields,
+                      name: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let join_prefix = create_join_prefix();
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f
-                .iter()
-                .map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
+            let names = f.iter().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let types = f.iter().map(|x| x.ty.clone());
             let idents = f.iter().map(|x| x.ident.clone().unwrap());
             quote! {
@@ -131,20 +121,20 @@ fn return_with_fields(f: syn::Fields, name: proc_macro2::TokenStream) -> proc_ma
                                                                 _matches)?,  )*
                 });
             }
-        }
-        syn::Fields::Unit => quote!( return Some( #name ); ),
+        },
+        syn::Fields::Unit => {
+            quote!( return Some( #name ); )
+        },
         syn::Fields::Unnamed(ref unnamed) if unnamed.unnamed.len() == 1 => {
-            let f = unnamed
-                .unnamed
-                .iter()
-                .next()
-                .expect("we should have one field");
+            let f = unnamed.unnamed.iter().next().expect("we should have one field");
             let mytype = f.ty.clone();
-            quote! {
+            quote!{
                 return Some( #name(<#mytype as ::clapme::ClapMe>::from_clap(&_name, _matches)? ) );
             }
-        }
-        _ => panic!("ClapMe only supports named fields so far!"),
+        },
+        _ => {
+            panic!("ClapMe only supports named fields so far!")
+        },
     }
 }
 
@@ -152,17 +142,14 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
     match f {
         syn::Fields::Named(ref fields) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
-            let names = f
-                .iter()
-                .rev()
-                .map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
+            let names = f.iter().rev().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
             let types = f.iter().rev().map(|x| x.ty.clone());
             let names1 = names.clone();
             let types1 = f.iter().rev().map(|x| x.ty.clone());
 
             let docs: Vec<_> = f.iter().rev().map(|x| get_doc_comment(&x.attrs)).collect();
             let join_prefix = create_join_prefix();
-            quote! {
+            quote!{
                 let join_prefix = #join_prefix;
                 let mut flags: Vec<String> = Vec::new();
                 if !info.required {
@@ -190,10 +177,10 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                    };
                 )*
             }
-        }
+        },
         syn::Fields::Unit => {
             let doc = mdoc.unwrap_or("".to_string());
-            quote! {
+            quote!{
                 let newinfo = info.clone();
                 let f = |app: ::clapme::clap::App| {
                     let conflicts: Vec<_> = newinfo.conflicted_flags.iter().map(AsRef::as_ref).collect();
@@ -212,12 +199,12 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                     }
                 };
             }
-        }
+        },
         syn::Fields::Unnamed(ref unnamed) if unnamed.unnamed.len() == 1 => {
             let f = unnamed.unnamed.iter().next().unwrap();
             let mytype = f.ty.clone();
             let doc = mdoc.unwrap_or("".to_string());
-            quote! {
+            quote!{
                 let newinfo = ::clapme::ArgInfo {
                     name: &_name,
                     help: #doc,
@@ -230,13 +217,15 @@ fn with_clap_fields(f: syn::Fields, mdoc: Option<String>) -> proc_macro2::TokenS
                     <#mytype as ::clapme::ClapMe>::with_clap(newinfo, app, f)
                 };
             }
-        }
-        _ => panic!("ClapMe only supports named fields, unit, and singular tuple so far!"),
+        },
+        _ => {
+            panic!("ClapMe only supports named fields, unit, and singular tuple so far!")
+        },
     }
 }
 
 fn create_join_prefix() -> proc_macro2::TokenStream {
-    quote! {
+    quote!{
         |prefix: &str, name: &str| -> String {
             if name.len() == 0 {
                 let mut x = prefix.to_string();
@@ -249,7 +238,7 @@ fn create_join_prefix() -> proc_macro2::TokenStream {
     }
 }
 fn create_find_prefix() -> proc_macro2::TokenStream {
-    quote! {
+    quote!{
         |name: &str| -> String {
             match name.chars().next() {
                 None | Some('_') | Some('-') => "".to_string(),
@@ -276,14 +265,12 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }) => {
             let f: Vec<_> = fields.named.clone().into_iter().collect();
             let types3 = f.iter().rev().map(|x| x.ty.clone());
-            let names3 = f
-                .iter()
-                .rev()
-                .map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
-            let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()), None);
-            let return_struct =
-                return_with_fields(syn::Fields::Named(fields.clone()), quote!(#name));
-            quote! {
+            let names3 = f.iter().rev().map(|x| snake_case_to_kebab(&x.ident.clone().unwrap().to_string()));
+            let with_clap_stuff = with_clap_fields(syn::Fields::Named(fields.clone()),
+                                                   None);
+            let return_struct = return_with_fields(syn::Fields::Named(fields.clone()),
+                                                   quote!(#name));
+            quote!{
                 fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
                                 app: ::clapme::clap::App,
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
@@ -307,12 +294,12 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     flags
                 }
             }
-        }
+        },
         Struct(DataStruct {
             fields: syn::Fields::Unit,
             ..
         }) => {
-            quote! {
+            quote!{
                 fn with_clap<ClapMeT>(mut _info: ::clapme::ArgInfo,
                                 app: ::clapme::clap::App,
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
@@ -326,7 +313,7 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     Vec::new()
                 }
             }
-        }
+        },
         Struct(DataStruct {
             fields: syn::Fields::Unnamed(ref unnamed),
             ..
@@ -334,16 +321,13 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             if unnamed.unnamed.len() != 1 {
                 panic!("ClapMe does not handle tuple structs with more than one field");
             }
-            let with_clap_stuff = with_clap_fields(syn::Fields::Unnamed(unnamed.clone()), None);
-            let return_struct =
-                return_with_fields(syn::Fields::Unnamed(unnamed.clone()), quote!(#name));
-            let f = unnamed
-                .unnamed
-                .iter()
-                .next()
-                .expect("There should be a field here!");
+            let with_clap_stuff = with_clap_fields(syn::Fields::Unnamed(unnamed.clone()),
+                                                   None);
+            let return_struct = return_with_fields(syn::Fields::Unnamed(unnamed.clone()),
+                                                   quote!(#name));
+            let f = unnamed.unnamed.iter().next().expect("There should be a field here!");
             let mytype = f.ty.clone();
-            quote! {
+            quote!{
                 fn with_clap<ClapMeT>(mut info: ::clapme::ArgInfo,
                                 app: ::clapme::clap::App,
                                 f: impl FnOnce(::clapme::clap::App) -> ClapMeT)
@@ -359,14 +343,10 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     <#mytype as ::clapme::ClapMe>::requires_flags(_name)
                 }
             }
-        }
+        },
         Enum(ref e) => {
             let v: Vec<_> = e.variants.iter().collect();
-            let vnames: Vec<_> = e
-                .variants
-                .iter()
-                .map(|v| camel_case_to_kebab(&v.ident.to_string()))
-                .collect();
+            let vnames: Vec<_> = e.variants.iter().map(|v| camel_case_to_kebab(&v.ident.to_string())).collect();
             let only_one_variant = vnames.len() == 1;
             // If only_one_variant is true, this is a special case,
             // and the code below won't work, because required_unless
@@ -380,13 +360,10 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let vnames6 = vnames.clone();
             // println!("variant names are {:?}", names);
             let fields: Vec<_> = v.iter().map(|x| x.fields.clone()).collect();
-            let with_claps: Vec<_> = v
-                .iter()
-                .map(|v| {
-                    let d = get_doc_comment(&v.attrs);
-                    with_clap_fields(v.fields.clone(), Some(d))
-                })
-                .collect();
+            let with_claps: Vec<_> = v.iter().map(|v| {
+                let d = get_doc_comment(&v.attrs);
+                with_clap_fields(v.fields.clone(), Some(d))
+            }).collect();
             // println!("variant with_claps are {:?}", with_claps);
             let one_field: Vec<_> = fields.iter().map(|f| one_field_name(f.clone())).collect();
             let one_field2 = one_field.clone();
@@ -464,16 +441,16 @@ pub fn clapme(raw_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }
             };
             s
-        }
+        },
         _ => panic!("ClapMe only supports non-tuple structs"),
     };
 
     let generic_types = input.generics.type_params();
-    let bounds = quote! {
+    let bounds = quote!{
         <#(#generic_types: ::clapme::ClapMe),*>
     };
 
-    let tokens2: proc_macro2::TokenStream = quote! {
+    let tokens2: proc_macro2::TokenStream = quote!{
         impl#bounds ::clapme::ClapMe for #name#generics {
             #myimpl
         }

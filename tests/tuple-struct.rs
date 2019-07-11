@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[macro_use]
 extern crate clapme;
 
 use clapme::ClapMe;
@@ -17,7 +18,8 @@ fn tuple_struct() {
     println!("help: {}", Opt::help_message("foo"));
     assert!(!Opt::help_message("foo").contains("--first"));
 
-    assert_eq!(Opt(7), Opt::from_iter(&["", "7"]).unwrap());
+    assert_eq!(Opt(7),
+               Opt::from_iter(&["","7"]).unwrap());
 
     assert!(Opt::from_iter(&[""]).is_err());
 
@@ -31,5 +33,6 @@ fn unit_struct() {
     println!("help: {}", Opt::help_message("foo"));
     assert!(!Opt::help_message("foo").contains("--first"));
 
-    assert_eq!(Opt, Opt::from_iter(&[""]).unwrap());
+    assert_eq!(Opt,
+               Opt::from_iter(&[""]).unwrap());
 }
